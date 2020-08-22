@@ -8,7 +8,7 @@ for i in range(0, N):
     for j in range(i+1, N):
         for k in range(j+1, N):
             if vals[i]+vals[j]+vals[k] == 0:
-                print(i,j,k,file=sys.stderr)
-                print(True)
+                print("{}:{}  {}:{}  {}:{}".format(i,vals[i],j,vals[j],k,vals[k]),file=sys.stderr)
+                print("Found")
                 sys.exit()
-print(False)
+print("None")

@@ -6,22 +6,29 @@ import java.util.Collections;
 public class Weed
 {
 
-    public static void main(String[] args)
-    {
-	int N = Integer.parseInt(args[0]);
-	List<Long> vals = new ArrayList<>();
-	Random R = new Random(Integer.parseInt(args[1]));
+	public static long mynextLong(Random R) {
+		return R.nextLong() / 4;
+	}
+    public static void main(final String[] args) {
+		final int N = Integer.parseInt(args[0]);
+		final List<Long> vals = new ArrayList<>();
 
-	vals.add(R.nextLong());
-	vals.add(R.nextLong());
-	vals.add(-(vals.get(0) + vals.get(1) ));
-       	if (R.nextBoolean())  vals.set(2,vals.get(2)+1);
-	for (int i = 3; i<N; ++i) vals.add(R.nextLong());
-	
-	Collections.shuffle(vals,R);
+		final Random R = new Random(Integer.parseInt(args[1]));
+		if(args.length > 1){
+			R.setSeed(Long.parseLong(args[1]) + N);			
+		} 
 
-	System.out.println(N);
-	for (int i = 0; i<N; ++i) System.out.println(vals.get(i));
+		vals.add(mynextLong(R));
+		vals.add(mynextLong(R));
+		vals.add(-(vals.get(0) + vals.get(1) ));
+			if (R.nextBoolean())  vals.set(2,vals.get(2)+1);
+		for (int i = 3; i<N; ++i)
+				vals.add(mynextLong(R));
+		
+		Collections.shuffle(vals,R);
+
+		System.out.println(N);
+		for (int i = 0; i<N; ++i) System.out.println(vals.get(i));
 
 //	for (int i = 0; i<N; ++i)
 //	    for (int j = i+1; j<N; ++j)

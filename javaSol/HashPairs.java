@@ -1,7 +1,7 @@
 import java.util.Scanner;
 import java.util.HashMap;
 
-public class HashTriples
+public class HashPairs
 {
     public static void main(String[] args)
     {
@@ -17,12 +17,13 @@ public class HashTriples
 
         // the variables are ordered l < k < j < i; sorry
         for (int i = 0; i<N; ++i) 
-            for (int j = 0; j < i; j+= 1) // i goes through {0, ..., N-1}
+            for (int j = 0; j < i; j+= 1) {// i goes through {0, ..., N-1}
                 Integer l = H.get(-vals[i]-vals[j]);
                 if (l != null && l<j ) {
-                    System.out.println("true");
+                    System.out.println("Found");
                     System.exit(0);                    
                 }
-        System.out.println("false");
+            }
+        System.out.println("None");
     }
 }

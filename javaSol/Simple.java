@@ -14,10 +14,10 @@ public class Simple
 			for (int k = j+1; k<N; ++k)
 				if (vals[i] + vals[j] + vals[k] == 0) 
 				{
-					System.err.println(i+" "+j+" "+k+" "+l);
-					System.out.println(true);
+					System.err.println(i+":"+vals[i]+" "+j+":"+vals[j]+" "+k+":"+vals[k] );
+					System.out.println("Found");
 					System.exit(0);
 				}
-        System.out.println(false);
+        System.out.println("None");
     }
 }

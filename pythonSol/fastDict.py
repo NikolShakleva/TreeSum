@@ -4,8 +4,7 @@ def foursum(vals):
     N=len(vals)
     P = dict()
     for i in range(N):
-        for j in range(i+1,N):
-            P[+vals[i]+vals[j]] = i
+        P[+vals[i]] = i
 
     for j in range(N):
         for i in range(j):
@@ -16,4 +15,4 @@ def foursum(vals):
 if __name__ == '__main__':
     N = int(sys.stdin.readline())
     vals = list(map(int, sys.stdin.readlines()))
-    print(foursum(vals[:N]))
+    print("Found" if foursum(vals[:N]) else "None")

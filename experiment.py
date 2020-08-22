@@ -2,82 +2,69 @@
 import sys,random,subprocess,statistics,pathlib
 from timeit import default_timer as timer
 
-# looping with outermost loop is the repetition of the experiment would be even better
+# looping with outermost loop in the repetition of the experiment would be even better
 
 python='python3'
 Nlist = [int(30*1.41**i) for i in range(6)]
-lNlist = [int(30*1.41**i) for i in range(10)]
-llNlist = [int(30*1.41**i) for i in range(15)]
 
+print(Nlist)
 
-# Nlist = [int(30*1.41**i) for i in range(3)]
-# lNlist = [int(30*1.41**i) for i in range(5)]
-# llNlist = [int(30*1.41**i) for i in range(8)]
-# lNlist = Nlist
-# llNlist = Nlist
-
-print(llNlist)
-
-TableDir="./Tables1"
+TableDir="./Tables"
 
 pathlib.Path(TableDir).mkdir() # force it to be empty - parents=True, exist_ok=True)
 
-
-#sys.exit()
-triple=(python, 'Triple.py')
-
-subprocess.call("javac Weed.java",shell=True)
+subprocess.run("javac Weed.java",shell=True,check=True)
 weed=('java', '-cp', '.','Weed')
-subprocess.call("javac javaSol/FastCmp.java",shell=True)
-fastCmp=('java', '-cp', 'javaSol','FastCmp')
-subprocess.call("javac javaSol/FastCmp1.java",shell=True)
-fastCmp1=('java', '-cp', 'javaSol','FastCmp1')
-subprocess.call("javac javaSol/FastHashMap.java",shell=True)
-fastHash=('java', '-cp', 'javaSol','FastHashMap')
-subprocess.call("javac javaSol/Fast.java",shell=True)
-fast=('java', '-cp', 'javaSol','Fast')
-subprocess.call("javac javaSol/Simple.java",shell=True)
+subprocess.run("javac javaSol/Simple.java",shell=True,check=True)
 simpJava=('java', '-cp', 'javaSol','Simple')
+subprocess.run("javac javaSol/HashPairs.java",shell=True,check=True)
+dictJava=('java', '-cp', 'javaSol','HashPairs')
 
 simpPyth=(python, 'pythonSol/simple.py')
-fastPyth=(python, 'pythonSol/fast.py')
 dictPyth=(python, 'pythonSol/fastDict.py')
 
-def prodExp(prod,name,extra=[]):
-#    runExp(prod,simpJava,tableFile=TableDir+'/'+name+'Java.table', Nlist=llNlist,extra=extra)
-#runExp(prod,simpPyth,tableFile=TableDir+'/'+name+'PythSimp.table', Nlist=Nlist,extra=extra)
-    runExp(prod,fastPyth,tableFile=TableDir+'/'+name+'PythDictSimple.table', Nlist=llNlist,extra=extra)
-    runExp(prod,fastHash,tableFile=TableDir+'/'+name+'JavaHash.table', Nlist=llNlist,extra=extra)
-    runExp(prod,dictPyth,tableFile=TableDir+'/'+name+'PythDict.table', Nlist=llNlist,extra=extra)
+def prodExp(prod,name,seed=0):
+    runExp(prod,simpJava,tableFile=TableDir+'/'+name+'JavaSimple.table', Nlist=Nlist,seed=seed)
+    runExp(prod,simpPyth,tableFile=TableDir+'/'+name+'PythSimple.table', Nlist=Nlist,seed=seed)
+    runExp(prod,dictJava,tableFile=TableDir+'/'+name+'JavaDict.table',   Nlist=Nlist,seed=seed)
+    runExp(prod,dictPyth,tableFile=TableDir+'/'+name+'PythDict.table',   Nlist=Nlist,seed=seed)
 
 def _main():
-    prodExp(weed,"Weed1",extra=['1'])
-#    prodExp(triple,"Triple")
-#    prodExp(weed,"Weed0",extra=['0'])
+    prodExp(weed,"Weed",seed = 12345)
 
-def runExp(producer,foursum,tableFile='', Nlist=[100], extra=[]):
+results = dict()
+def runExp(producer,tested,tableFile='', Nlist=[100],seed = 0, results = results ):
     FastCmp = dict()
     for N in Nlist:
         FastCmp[N]=[]
     for i in range(4):
-      for N in Nlist:
-        start = timer()
-        print( tableFile, tuple( list(producer) + [str(N)] +extra) )
-        ps = subprocess.Popen(tuple( list(producer) + [str(N)] + extra), stdout=subprocess.PIPE,stderr=subprocess.DEVNULL)
-        output = subprocess.check_output(foursum, stdin=ps.stdout,stderr=subprocess.DEVNULL)
-        #output = subprocess.check_output(('cat'), stdin=ps.stdout)
-        ps.wait()
-        end = timer()
-        measure = end-start
-        FastCmp[N].append(measure)
-        print("Time: " + str(measure)   )
-        #        print('Output: ' + output.decode("utf-8") )
+        myseed = seed + 7896*i
+        extra = [ str(myseed) ] if seed > 0 else []
+        for N in Nlist:
+            start = timer()
+            print( tableFile, tuple( list(producer) + [str(N)] +extra) )
+            ps = subprocess.Popen(tuple( list(producer) + [str(N)] + extra), stdout=subprocess.PIPE,stderr=subprocess.DEVNULL)
+            result = subprocess.run(tested, stdin=ps.stdout,stderr=subprocess.PIPE,stdout=subprocess.PIPE,check=True)
+            ps.wait()
+            end = timer()
+            measure = end-start
+            FastCmp[N].append(measure)
+            print("Time: " + str(measure)   )
+            if seed > 0:
+                outp = result.stdout.decode("utf-8")
+                if (N,myseed) in results  and not results[(N,myseed)] == outp:
+                    print("different results for N={} seed={} tested={}: is={} ({}), should be {}".format(
+                        N,myseed,tested,outp,result.stderr.decode("utf-8"),results[(N,myseed)]))
+                    exit(1)
+                else:
+                    results[(N,myseed)] = outp
+            #        print('Output: ' + output.decode("utf-8") )
 
     if tableFile == '':
         table = sys.stdout
     else:
         table = open(tableFile,'w')
-        
+
     for N in sorted(FastCmp.keys()):
         mm = FastCmp[N]
         mean = statistics.mean(mm)

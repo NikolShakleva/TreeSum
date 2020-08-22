@@ -9,6 +9,7 @@
 \usepackage{enumitem}
 \usepackage{pgfplots}
 \pgfplotsset{width=9cm,compat=1.13}
+\usepackage{pgfplotstable}
 
 \title{Comparison of Three sum algorithms}
 \author{Riko Jacob (rikj@itu.dk)}
@@ -24,32 +25,30 @@ The algorithms are explained elsewhere.
 
 \subsection{Experiments}
 
-The following table summarises the empirical performance data on the input files in the \texttt{data} directory.
-We have run each file once, and report the minimum, maximum, and average running time over the files for each input size.
+The two algorithms are
+\begin{itemize}
+\item enumerating all triples in $O(n^3)$
+\item storing the numbers in a hashtable and check all pairs in $O(n^2)$ time
+\end{itemize}
 
-  \bigskip\noindent
-{ \small
-  \begin{tabular}{cccccccc}
-  \toprule
-& \multicolumn{3}{c}{Java} & $\quad$ & \multicolumn{3}{c}{Python}  \\\cmidrule{2-4} \cmidrule{6-8}
-  $N$     & $\min$     & $\max$ & avg. &
-          & $\min$     & $\max$ & avg.   \\\midrule
-  $100	$ & 1 sec & 5 days & 23.5 hours \\
-  $[\ldots]$ \\
-  \bottomrule
-  \end{tabular}
-}
+Both algorithms are implemented in java and python3.
 
-\medskip
-We can plot the maximum running time as a function of input size, as a standard plot and as a log--log plot.\sidenote{Draw both graphs, as two separate figures. Use any software you want, or draw it by hand.}
-In the latter, the points fall nicely on a line whose slope is [$\cdots$\sidenote{replace by an integer. Consult \href{https://en.wikipedia.org/wiki/Slope}{[wikipedia]} to recall what the slope of a line is. Note that the line we're referring to is in the log--log plot, so it does not correspond to a line in the original plot.}].
-This corresponds/does not correspond to the theoretical prediction, because [$\cdots$]
-\medskip
 
 \newcommand{\tableDir}{Tables56c1cb7}
+We report on an experiment executed on a Thinkpad x260 with a i7-6500U CPU, with a  nominal frequency of 2.50GHz.
+We run serial programs, even though the CPU has for cores.
+The data can be found in \tableDir.
+The running times are determined by a python script running the testprogram as a subprocess.
+We report mean and standard deviation from 4 runs.
+We stop executions that take more than 90 seconds.
+
+The data for the triple loop algorithm in python looks like this (column 0 is size, 1 is mean, 2 is standard deviation):
+
+\pgfplotstabletypeset{\tableDir /WeedJavaSimple.table}
+
 \begin{tikzpicture}
 	\begin{axis}[
-		title={Running time for search, one planted triple},
+		title={Running times no triples, data in \tableDir},
 		xlabel={$N$},
                 xmode = log,
                 log ticks with fixed point,
@@ -65,12 +64,12 @@ This corresponds/does not correspond to the theoretical prediction, because [$\c
 		%ymajorgrids=true,
 		%grid style=dashed,
 	]
-	\addplot[color=blue, mark=x,error bars/.cd,y dir=both,y explicit ] table [x index=0, y index=1, y error index=2] {\tableDir /WeedJavaSimple.table};
         %	coordinates { (100,32)(200,37.8)(400,44.6)(800,61.8)(1600,83.8)(3200,114) };
 	\addplot[ color=red, mark=*,error bars/.cd,y dir=both,y explicit ]	table [x index=0, y index=1, y error index=2] {\tableDir /WeedPythSimple.table};
         % coordinates { (100,132)(200,72.8)(400,144.6)(800,161.8)(1600,133.8)(3200,224) };
-	\addplot[ color=green, mark=o,error bars/.cd,y dir=both,y explicit ] table [x index=0, y index=1, y error index=2] {\tableDir /WeedJavaDict.table};
+	\addplot[color=blue, mark=x,error bars/.cd,y dir=both,y explicit ] table [x index=0, y index=1, y error index=2] {\tableDir /WeedJavaSimple.table};
 	\addplot[ color=brown, mark=x,error bars/.cd,y dir=both,y explicit ] table [x index=0, y index=1, y error index=2] {\tableDir /WeedPythDict.table};
+	\addplot[ color=green, mark=o,error bars/.cd,y dir=both,y explicit ] table [x index=0, y index=1, y error index=2] {\tableDir /WeedJavaDict.table};
 %        \addplot[color=yellow] expression[domain=8:3200] {.00009*x+.08};
 %        \addplot[color=yellow] expression[domain=8:3200] {.0009*x};
 %        \addplot[color=yellow] expression[domain=8:3200] {.0002*x*ln(x)};
@@ -79,7 +78,7 @@ This corresponds/does not correspond to the theoretical prediction, because [$\c
 %        \addplot[color=yellow] expression[domain=8:3200] {.00000000031*x*x*x*x};
         \addplot[color=yellow] expression[domain=8:15000] {.00000013*x*x};
         \addplot[color=yellow] expression[domain=8:15000] {.000000018*x*x};
-	\legend{Java, Python, Fast Java, Fast Python}
+	\legend{Python, Java, Fast Python, Fast Java, $x^2$, $x^3$}
 	\end{axis}
 \end{tikzpicture}
 

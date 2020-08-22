@@ -5,7 +5,7 @@ from timeit import default_timer as timer
 # looping with outermost loop in the repetition of the experiment would be even better
 
 python='python3'
-Nlist = [int(30*1.41**i) for i in range(23)]
+Nlist = [int(30*1.41**i) for i in range(29)]
 
 print(Nlist)
 
@@ -45,7 +45,7 @@ def runExp(producer,tested,tableFile='', Nlist=[100],seed = 0, results = results
             try:
                 start = timer()
                 ps = subprocess.Popen(tuple( list(producer) + [str(N)] + extra), stdout=subprocess.PIPE,stderr=subprocess.DEVNULL)
-                result = subprocess.run(tested, stdin=ps.stdout,stderr=subprocess.PIPE,stdout=subprocess.PIPE,check=True, timeout=30)
+                result = subprocess.run(tested, stdin=ps.stdout,stderr=subprocess.PIPE,stdout=subprocess.PIPE,check=True, timeout=90)
                 ps.wait()
                 end = timer()
             except subprocess.TimeoutExpired as e:

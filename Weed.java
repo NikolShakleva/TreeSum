@@ -20,8 +20,9 @@ public class Weed
 
 		vals.add(mynextLong(R));
 		vals.add(mynextLong(R));
-		vals.add(-(vals.get(0) + vals.get(1) ));
-			if (R.nextBoolean())  vals.set(2,vals.get(2)+1);
+		// vals.add(-(vals.get(0) + vals.get(1) ));
+		vals.add(mynextLong(R));
+		// if ( R.nextBoolean())  vals.set(2,vals.get(2)+1);
 		for (int i = 3; i<N; ++i)
 				vals.add(mynextLong(R));
 		

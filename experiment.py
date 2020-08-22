@@ -2,19 +2,23 @@
 import sys,random,subprocess,statistics,pathlib
 from timeit import default_timer as timer
 
-# looping with outermost loop in the repetition of the experiment would be even better
+githash = subprocess.check_output(["git","rev-parse","--short","HEAD"]).decode("utf-8")[:-1]
+
+TableDir="./Tables{}".format(githash)
+i=1
+while pathlib.Path(TableDir).exists():
+    TableDir="./Tables{}-{:02}".format(githash,i)
+    i += 1
+pathlib.Path(TableDir).mkdir() # force it to be empty - parents=True, exist_ok=True)
+if len(subprocess.check_output(["git","st","--porcelain"])) > 0:
+    subprocess.run("cd {0}; git st --porcelain > gitst.txt; git diff > patch.diff".format(TableDir),shell=True)
 
 python='python3'
 Nlist = [int(30*1.41**i) for i in range(29)]
-
 print(Nlist)
 
-TableDir="./Tables"
-
-pathlib.Path(TableDir).mkdir() # force it to be empty - parents=True, exist_ok=True)
-
 subprocess.run("javac Weed.java",shell=True,check=True)
-weed=('java', '-cp', '.','Weed')
+weed=('java', '-cp', '.','Weed') ## supplying only 
 subprocess.run("javac javaSol/Simple.java",shell=True,check=True)
 simpJava=('java', '-cp', 'javaSol','Simple')
 subprocess.run("javac javaSol/HashPairs.java",shell=True,check=True)

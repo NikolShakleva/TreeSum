@@ -14,10 +14,9 @@ public class Weed
 
 	vals.add(R.nextLong());
 	vals.add(R.nextLong());
-	vals.add(R.nextLong());
-	vals.add(-(vals.get(0) + vals.get(1) + vals.get(2)));
-       	if (R.nextBoolean())  vals.set(3,vals.get(3)+1);
-	for (int i = 4; i<N; ++i) vals.add(R.nextLong());
+	vals.add(-(vals.get(0) + vals.get(1) ));
+       	if (R.nextBoolean())  vals.set(2,vals.get(2)+1);
+	for (int i = 3; i<N; ++i) vals.add(R.nextLong());
 	
 	Collections.shuffle(vals,R);
 

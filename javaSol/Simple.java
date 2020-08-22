@@ -12,8 +12,7 @@ public class Simple
 	for (int i = 0; i < N; i+= 1) // i goes through {0, ..., N-1}
 	    for (int j = i+1; j<N; ++j)
 			for (int k = j+1; k<N; ++k)
-				for (int l = k+1; l<N; ++l)
-				if (vals[i] + vals[j] + vals[k] + vals[l] == 0) 
+				if (vals[i] + vals[j] + vals[k] == 0) 
 				{
 					System.err.println(i+" "+j+" "+k+" "+l);
 					System.out.println(true);

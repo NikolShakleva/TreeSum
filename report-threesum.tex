@@ -46,6 +46,7 @@ In the latter, the points fall nicely on a line whose slope is [$\cdots$\sidenot
 This corresponds/does not correspond to the theoretical prediction, because [$\cdots$]
 \medskip
 
+\newcommand{\tableDir}{Tables56c1cb7}
 \begin{tikzpicture}
 	\begin{axis}[
 		title={Running time for search, one planted triple},
@@ -55,7 +56,7 @@ This corresponds/does not correspond to the theoretical prediction, because [$\c
                 ymode = log,
 		ylabel={Time (s)},
 		xmin=30, xmax=15000,
-		ymin=.03, ymax=25,
+		ymin=.03, ymax=75,
 		xtick={30,50,100,200,400, 800, 2000,5000,15000},
 		%ytick={0,40,80,160},
 		ytick={.05,.1,.2,.5,1,2,5,10,20},
@@ -64,19 +65,20 @@ This corresponds/does not correspond to the theoretical prediction, because [$\c
 		%ymajorgrids=true,
 		%grid style=dashed,
 	]
-	\addplot[color=blue, mark=x,error bars/.cd,y dir=both,y explicit ] table [x index=0, y index=1, y error index=2] {TablesTeX/WeedJavaSimple.table};
+	\addplot[color=blue, mark=x,error bars/.cd,y dir=both,y explicit ] table [x index=0, y index=1, y error index=2] {\tableDir /WeedJavaSimple.table};
         %	coordinates { (100,32)(200,37.8)(400,44.6)(800,61.8)(1600,83.8)(3200,114) };
-	\addplot[ color=red, mark=*,error bars/.cd,y dir=both,y explicit ]	table [x index=0, y index=1, y error index=2] {TablesTeX/WeedPythSimple.table};
+	\addplot[ color=red, mark=*,error bars/.cd,y dir=both,y explicit ]	table [x index=0, y index=1, y error index=2] {\tableDir /WeedPythSimple.table};
         % coordinates { (100,132)(200,72.8)(400,144.6)(800,161.8)(1600,133.8)(3200,224) };
-	\addplot[ color=green, mark=o,error bars/.cd,y dir=both,y explicit ] table [x index=0, y index=1, y error index=2] {TablesTeX/WeedJavaDict.table};
-	\addplot[ color=brown, mark=x,error bars/.cd,y dir=both,y explicit ] table [x index=0, y index=1, y error index=2] {TablesTeX/WeedPythDict.table};
+	\addplot[ color=green, mark=o,error bars/.cd,y dir=both,y explicit ] table [x index=0, y index=1, y error index=2] {\tableDir /WeedJavaDict.table};
+	\addplot[ color=brown, mark=x,error bars/.cd,y dir=both,y explicit ] table [x index=0, y index=1, y error index=2] {\tableDir /WeedPythDict.table};
 %        \addplot[color=yellow] expression[domain=8:3200] {.00009*x+.08};
 %        \addplot[color=yellow] expression[domain=8:3200] {.0009*x};
 %        \addplot[color=yellow] expression[domain=8:3200] {.0002*x*ln(x)};
-        \addplot[color=yellow] expression[domain=8:15000] {.000000021*x*x*x};
+        \addplot[color=yellow] expression[domain=8:15000] {.000000031*x*x*x};
         \addplot[color=yellow] expression[domain=8:15000] {.00000000011*x*x*x};
 %        \addplot[color=yellow] expression[domain=8:3200] {.00000000031*x*x*x*x};
-        \addplot[color=yellow] expression[domain=8:15000] {.000000028*x*x};
+        \addplot[color=yellow] expression[domain=8:15000] {.00000013*x*x};
+        \addplot[color=yellow] expression[domain=8:15000] {.000000018*x*x};
 	\legend{Java, Python, Fast Java, Fast Python}
 	\end{axis}
 \end{tikzpicture}

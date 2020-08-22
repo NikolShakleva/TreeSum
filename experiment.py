@@ -5,7 +5,7 @@ from timeit import default_timer as timer
 # looping with outermost loop in the repetition of the experiment would be even better
 
 python='python3'
-Nlist = [int(30*1.41**i) for i in range(6)]
+Nlist = [int(30*1.41**i) for i in range(23)]
 
 print(Nlist)
 
@@ -41,12 +41,16 @@ def runExp(producer,tested,tableFile='', Nlist=[100],seed = 0, results = results
         myseed = seed + 7896*i
         extra = [ str(myseed) ] if seed > 0 else []
         for N in Nlist:
-            start = timer()
             print( tableFile, tuple( list(producer) + [str(N)] +extra) )
-            ps = subprocess.Popen(tuple( list(producer) + [str(N)] + extra), stdout=subprocess.PIPE,stderr=subprocess.DEVNULL)
-            result = subprocess.run(tested, stdin=ps.stdout,stderr=subprocess.PIPE,stdout=subprocess.PIPE,check=True)
-            ps.wait()
-            end = timer()
+            try:
+                start = timer()
+                ps = subprocess.Popen(tuple( list(producer) + [str(N)] + extra), stdout=subprocess.PIPE,stderr=subprocess.DEVNULL)
+                result = subprocess.run(tested, stdin=ps.stdout,stderr=subprocess.PIPE,stdout=subprocess.PIPE,check=True, timeout=30)
+                ps.wait()
+                end = timer()
+            except subprocess.TimeoutExpired as e:
+                break
+
             measure = end-start
             FastCmp[N].append(measure)
             print("Time: " + str(measure)   )
@@ -67,9 +71,10 @@ def runExp(producer,tested,tableFile='', Nlist=[100],seed = 0, results = results
 
     for N in sorted(FastCmp.keys()):
         mm = FastCmp[N]
-        mean = statistics.mean(mm)
-        stddev = statistics.stdev(mm)
-        print("{:4} {:.3f} {:.3f}".format(N,mean,stddev),file=table)
+        if len(mm) > 0:
+            mean = statistics.mean(mm) 
+            stddev = statistics.stdev(mm) if len(mm) > 1 else 0
+            print("{:4} {:.3f} {:.3f}".format(N,mean,stddev),file=table)
 
 if __name__ == '__main__':
     _main()

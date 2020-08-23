@@ -34,6 +34,30 @@ OpenJDK Runtime Environment AdoptOpenJDK (build 11.0.6+10)
 OpenJDK 64-Bit Server VM AdoptOpenJDK (build 11.0.6+10, mixed mode)
 ```
 
+### Sedgewick/Wayne Library
+
+Download the library associated with the Sedgewick and Wayne book, that is, the file [algs4.jar](https://algs4.cs.princeton.edu/code/algs4.jar). Choose a directory where to store the file, for example your home directory `$HOME`. In your `.bashrc`, set your `CLASSPATH` environment variable to `.:$HOME/algs4.jar`. On a UNIX command line with bash, the following would do the job:
+```bash
+curl -s "https://algs4.cs.princeton.edu/code/algs4.jar" > "$HOME/algs4.jar"
+echo 'export CLASSPATH=".:$HOME/algs4.jar"' >> "$HOME/.bashrc"
+source "$HOME/.bashrc"
+```
+On MacOS, the file .`bashrc` is not used. Instead, you need to use `$HOME/.bash_profile` or `$HOME/.profile` in the commands above.
+
+In Windows 10, you can set the CLASSPATH environment variables as follows:
+Go to "Control Panel ⇒ System and Security ⇒ System ⇒ Advanced System Settings ⇒ Advanced ⇒ Environment Variables..." and add the correct path (such as `C:\path\to\algs4.jar`) to the "CLASSPATH" variable.
+
+There are other ways of installing algs4.jar, detailed instructions can be found in the middle of [this page](https://algs4.cs.princeton.edu/code/).
+
+### Test that it works
+
+In the end, it is important that you test that Java and the library are correctly installed.
+In a command prompt, enter the following:
+```bash
+java edu.princeton.cs.algs4.Date
+```
+If everything is installed correctly, this will print a bunch of dates. Otherwise, it will complain with an error message.
+
 ## Python
 
 Install Python 3.7 by downloading and running the _Anaconda_ installer appropriate for your operating system from the [anaconda website](https://www.anaconda.com/distribution/).
@@ -45,6 +69,28 @@ After installing Python, enter `python --version` in a command prompt and verify
 user@host:~$ python --version
 Python 3.7.6
 ```
+
+### Python translation of Sedgewick/Wayne Library
+
+Download and install our translation of Sedgewick and Wayne's library into
+Python 3. With Python 3 correctly installed, this should be as easy as running
+the following command:
+
+```bash
+pip install itu.algs4
+```
+
+In case this doesn't quite work, you can find more detailed instructions on
+[this page](https://github.com/itu-algorithms/itu.algs4).
+
+### Test that it works
+
+In the end, it is important that you test that Python as well as the library are correctly installed.
+In a command prompt, enter the following:
+```bash
+python -c 'from itu.algs4.stdlib import stdio; stdio.write("Hello World!\n")'
+```
+If everything is installed correctly, this will print `Hello World!`. Otherwise, it will complain with an error message.
 
 ## Editor
 

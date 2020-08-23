@@ -18,13 +18,13 @@ nodename = subprocess.check_output(["uname","-n"]).decode("utf-8")[:-1]
 TableDir="./Tables-{}-{}".format(nodename,githash)
 i=1
 while pathlib.Path(TableDir).exists():
-    TableDir="./Tables{}-{:02}".format(githash,i)
+    TableDir="./Tables{}-{}-{:02}".format(githash,nodename,i)
     i += 1
 pathlib.Path(TableDir).mkdir() # force it to be empty - parents=True, exist_ok=True)
 if len(subprocess.check_output(["git","status","--porcelain"])) > 0:
     subprocess.run("cd {0}; git status --porcelain > gitst.txt; git diff > patch.diff".format(TableDir),shell=True)
 
-subprocess.run("cd {}; ({} --version; {} --version;{} --version) > versions.txt".format(TableDir,python,javac,java),shell=True)
+subprocess.run("cd {}; ({} --version; {} -version;{} -version) > versions.txt".format(TableDir,python,javac,java),shell=True)
 
 subprocess.run([javac, "Weed.java"],check=True)
 weed=(java, '-cp', '.','Weed') ## supplying only 

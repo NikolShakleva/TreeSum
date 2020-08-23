@@ -6,6 +6,12 @@ python='python3'
 java="java"
 javac="javac"
 
+Nlist = [int(30*1.41**i) for i in range(29)]
+print(Nlist)
+
+timelimit = 5      # in seconds; if we exceed this, we don't try anything bigger
+hardtimelimit = 100 # then the OS is going to kill it -- protection agains infinite loops and alike
+
 githash = subprocess.check_output(["git","rev-parse","--short","HEAD"]).decode("utf-8")[:-1]
 
 TableDir="./Tables{}".format(githash)
@@ -18,10 +24,6 @@ if len(subprocess.check_output(["git","status","--porcelain"])) > 0:
     subprocess.run("cd {0}; git status --porcelain > gitst.txt; git diff > patch.diff".format(TableDir),shell=True)
 
 subprocess.run("cd {}; ({} --version; {} --version;{} --version) > versions.txt".format(TableDir,python,javac,java),shell=True)
-
-#Nlist = [int(30*1.41**i) for i in range(29)]
-Nlist = [int(30*1.41**i) for i in range(7)]
-print(Nlist)
 
 subprocess.run([javac, "Weed.java"],check=True)
 weed=(java, '-cp', '.','Weed') ## supplying only 
@@ -55,7 +57,7 @@ def runExp(producer,tested,tableFile='', Nlist=[100],seed = 0, results = results
             try:
                 start = timer()
                 ps = subprocess.Popen(tuple( list(producer) + [str(N)] + extra), stdout=subprocess.PIPE,stderr=subprocess.DEVNULL)
-                result = subprocess.run(tested, stdin=ps.stdout,stderr=subprocess.PIPE,stdout=subprocess.PIPE,check=True, timeout=90)
+                result = subprocess.run(tested, stdin=ps.stdout,stderr=subprocess.PIPE,stdout=subprocess.PIPE,check=True, timeout=hardtimelimit)
                 ps.wait()
                 end = timer()
             except subprocess.TimeoutExpired as e:
@@ -73,6 +75,8 @@ def runExp(producer,tested,tableFile='', Nlist=[100],seed = 0, results = results
                 else:
                     results[(N,myseed)] = outp
             #        print('Output: ' + output.decode("utf-8") )
+            if measure > timelimit:
+                break
 
     if tableFile == '':
         table = sys.stdout
@@ -81,9 +85,9 @@ def runExp(producer,tested,tableFile='', Nlist=[100],seed = 0, results = results
 
     for N in sorted(FastCmp.keys()):
         mm = FastCmp[N]
-        if len(mm) > 0:
+        if len(mm) > 0: ## mean and stddev are somewhat arbitrary - we'll get back to this later in the course
             mean = statistics.mean(mm) 
-            stddev = statistics.stdev(mm) if len(mm) > 1 else 0
+            stddev = statistics.stdev(mm) if len(mm) > 1 else 0 
             print("{:4} {:.3f} {:.3f}".format(N,mean,stddev),file=table)
 
 if __name__ == '__main__':

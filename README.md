@@ -12,7 +12,7 @@ Here are some tasks:
 - Clone your duplicate to your local machine (or your cloud server or whatever machine you play with)
 - Compile the LaTeX source with `pdflatex report-threesum.tex`.  This checks your LaTeX installation.
 - Add yourself as an author (attributing the original source).
-- Rerun the experiments with `python3 experiment.py`.  For this to  work, you need `python3` and a java installation (at least). Furthermore, we use the `algs4` library from the Sedgewick/Wayne book. Please refer to `software.md` for a full installation guide.
+- Rerun the experiments with `python3 experiment.py`.  For this to  work, you need `python3` and a java installation (at least). Furthermore, we use (not in all programs) the `algs4` library from the Sedgewick/Wayne book. Please refer to `software.md` for a full installation guide.
 - As is, `experiments.py` aims at the longest runs taking a little more than 5 seconds.  For the purpose of playing with the script, change the time limits and the list of input sizes to something small, to run an experiment set the limit to 30 seconds and include sufficiently large input sizes.
   Every time you run the `experiment.py` script, it creates a new folder.  
   Once you are happy with the experiment (for a start: it does not fail, only installed software is used)

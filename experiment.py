@@ -9,12 +9,13 @@ javac="javac"
 Nlist = [int(30*1.41**i) for i in range(29)]
 print(Nlist)
 
-timelimit = 5      # in seconds; if we exceed this, we don't try anything bigger
+timelimit = 30      # in seconds; if we exceed this, we don't try anything bigger
 hardtimelimit = 100 # then the OS is going to kill it -- protection agains infinite loops and alike
 
 githash = subprocess.check_output(["git","rev-parse","--short","HEAD"]).decode("utf-8")[:-1]
+nodename = subprocess.check_output(["uname","-n"]).decode("utf-8")[:-1]
 
-TableDir="./Tables{}".format(githash)
+TableDir="./Tables-{}-{}".format(nodename,githash)
 i=1
 while pathlib.Path(TableDir).exists():
     TableDir="./Tables{}-{:02}".format(githash,i)

@@ -2,6 +2,10 @@
 import sys,random,subprocess,statistics,pathlib
 from timeit import default_timer as timer
 
+python='python3'
+java="java"
+javac="javac"
+
 githash = subprocess.check_output(["git","rev-parse","--short","HEAD"]).decode("utf-8")[:-1]
 
 TableDir="./Tables{}".format(githash)
@@ -10,19 +14,21 @@ while pathlib.Path(TableDir).exists():
     TableDir="./Tables{}-{:02}".format(githash,i)
     i += 1
 pathlib.Path(TableDir).mkdir() # force it to be empty - parents=True, exist_ok=True)
-if len(subprocess.check_output(["git","st","--porcelain"])) > 0:
-    subprocess.run("cd {0}; git st --porcelain > gitst.txt; git diff > patch.diff".format(TableDir),shell=True)
+if len(subprocess.check_output(["git","status","--porcelain"])) > 0:
+    subprocess.run("cd {0}; git status --porcelain > gitst.txt; git diff > patch.diff".format(TableDir),shell=True)
 
-python='python3'
-Nlist = [int(30*1.41**i) for i in range(29)]
+subprocess.run("cd {}; ({} --version; {} --version;{} --version) > versions.txt".format(TableDir,python,javac,java),shell=True)
+
+#Nlist = [int(30*1.41**i) for i in range(29)]
+Nlist = [int(30*1.41**i) for i in range(7)]
 print(Nlist)
 
-subprocess.run("javac Weed.java",shell=True,check=True)
-weed=('java', '-cp', '.','Weed') ## supplying only 
-subprocess.run("javac javaSol/Simple.java",shell=True,check=True)
-simpJava=('java', '-cp', 'javaSol','Simple')
-subprocess.run("javac javaSol/HashPairs.java",shell=True,check=True)
-dictJava=('java', '-cp', 'javaSol','HashPairs')
+subprocess.run([javac, "Weed.java"],check=True)
+weed=(java, '-cp', '.','Weed') ## supplying only 
+subprocess.run([javac, "javaSol/Simple.java"],check=True)
+simpJava=(java, '-cp', 'javaSol','Simple')
+subprocess.run([javac, "javaSol/HashPairs.java"],check=True)
+dictJava=(java, '-cp', 'javaSol','HashPairs')
 
 simpPyth=(python, 'pythonSol/simple.py')
 dictPyth=(python, 'pythonSol/fastDict.py')

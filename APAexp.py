@@ -3,6 +3,7 @@ import sys,random,subprocess,statistics,pathlib,platform
 from timeit import default_timer as timer
 
 
+
 python='python3'
 java="java"
 javac="javac"
@@ -10,27 +11,32 @@ javac="javac"
 Nlist = [int(30*1.41**i) for i in range(29)]
 print(Nlist)
 
-timelimit = 30      # in seconds; if we exceed this, we don't try anything bigger
+timelimit = 5      # in seconds; if we exceed this, we don't try anything bigger
 hardtimelimit = 100 # then the OS is going to kill it -- protection agains infinite loops and alike
 
-githash = subprocess.check_output(["git","rev-parse","--short","HEAD"]).decode("utf-8")[:-1]
-nodename = platform.node()
+def _main():
+    td = prepareTableDir()
+    prodExp(weed,"Weed",seed = 12345,tabledir = td)
 
-TableDir="./Tables-{}-{}".format(nodename,githash)
-i=1
-while pathlib.Path(TableDir).exists():
-    TableDir="./Tables{}-{}-{:02}".format(githash,nodename,i)
-    i += 1
-testdir = pathlib.Path(TableDir)
-testdir.mkdir() # force it to be empty - parents=True, exist_ok=True)
-if len(subprocess.check_output(["git","status","--porcelain"])) > 0:
-    subprocess.run("cd {0}; git status --porcelain > gitst.txt; git diff > patch.diff".format(TableDir),shell=True)
+def prepareTableDir():
+    githash = subprocess.check_output(["git","rev-parse","--short","HEAD"]).decode("utf-8")[:-1]
+    nodename = platform.node()
 
-subprocess.run("cd {}; ({} --version; {} -version;{} -version) > versions.txt".format(TableDir,python,javac,java),shell=True)
+    TableDir="./Tables-{}-{}".format(nodename,githash)
+    i=1
+    while pathlib.Path(TableDir).exists():
+        TableDir="./Tables{}-{}-{:02}".format(githash,nodename,i)
+        i += 1
+    testdir = pathlib.Path(TableDir)
+    testdir.mkdir() # force it to be empty - parents=True, exist_ok=True)
+    if len(subprocess.check_output(["git","status","--porcelain"])) > 0:
+        subprocess.run("cd {0}; git status --porcelain > gitst.txt; git diff > patch.diff".format(TableDir),shell=True)
 
-with (testdir / 'platform.txt').open('w') as pf:
-    print(platform.platform(), file=pf)
-    print(platform.processor(), file=pf)
+    subprocess.run("cd {}; ({} --version; {} -version;{} -version) > versions.txt".format(TableDir,python,javac,java),shell=True)
+
+    with (testdir / 'platform.txt').open('w') as pf:
+        print(platform.platform(), file=pf)
+        print(platform.processor(), file=pf)
 
 subprocess.run([javac, "Weed.java"],check=True)
 weed=(java, '-cp', '.','Weed') ## supplying only 
@@ -47,9 +53,6 @@ def prodExp(prod,name,seed=0):
     runExp(prod,simpPyth,tableFile=TableDir+'/'+name+'PythSimple.table', Nlist=Nlist,seed=seed)
     runExp(prod,dictJava,tableFile=TableDir+'/'+name+'JavaDict.table',   Nlist=Nlist,seed=seed)
     runExp(prod,dictPyth,tableFile=TableDir+'/'+name+'PythDict.table',   Nlist=Nlist,seed=seed)
-
-def _main():
-    prodExp(weed,"Weed",seed = 12345)
 
 results = dict()
 def runExp(producer,tested,tableFile='', Nlist=[100],seed = 0, results = results ):

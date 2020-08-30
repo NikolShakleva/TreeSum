@@ -1,6 +1,7 @@
 # this is python3
-import sys,random,subprocess,statistics,pathlib
+import sys,random,subprocess,statistics,pathlib,platform
 from timeit import default_timer as timer
+
 
 python='python3'
 java="java"
@@ -13,18 +14,23 @@ timelimit = 30      # in seconds; if we exceed this, we don't try anything bigge
 hardtimelimit = 100 # then the OS is going to kill it -- protection agains infinite loops and alike
 
 githash = subprocess.check_output(["git","rev-parse","--short","HEAD"]).decode("utf-8")[:-1]
-nodename = subprocess.check_output(["uname","-n"]).decode("utf-8")[:-1]
+nodename = platform.node()
 
 TableDir="./Tables-{}-{}".format(nodename,githash)
 i=1
 while pathlib.Path(TableDir).exists():
     TableDir="./Tables{}-{}-{:02}".format(githash,nodename,i)
     i += 1
-pathlib.Path(TableDir).mkdir() # force it to be empty - parents=True, exist_ok=True)
+testdir = pathlib.Path(TableDir)
+testdir.mkdir() # force it to be empty - parents=True, exist_ok=True)
 if len(subprocess.check_output(["git","status","--porcelain"])) > 0:
     subprocess.run("cd {0}; git status --porcelain > gitst.txt; git diff > patch.diff".format(TableDir),shell=True)
 
 subprocess.run("cd {}; ({} --version; {} -version;{} -version) > versions.txt".format(TableDir,python,javac,java),shell=True)
+
+with (testdir / 'platform.txt').open('w') as pf:
+    print(platform.platform(), file=pf)
+    print(platform.processor(), file=pf)
 
 subprocess.run([javac, "Weed.java"],check=True)
 weed=(java, '-cp', '.','Weed') ## supplying only 

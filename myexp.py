@@ -1,13 +1,4 @@
-import APAexp
-
-import sys,random,subprocess,statistics,pathlib,platform
-
 from APAexp import Process,JavaProcess,PythonProcess, runExp, prepareTableDir
-
-
-python='python3'
-java="java"
-javac="javac"
 
 Nlist = [int(90*1.41**i) for i in range(20)]
 print(Nlist)

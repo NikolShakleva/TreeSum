@@ -4,7 +4,10 @@ from timeit import default_timer as timer
 
 from pathlib import Path
 
-python='python3'
+python=sys.executable
+if '' == python:
+    python = 'python3'
+# you may need to overwrite this in certain situations
 java="java"
 javac="javac"
 
@@ -18,7 +21,7 @@ class Process:
         return "Process " + self.sourcefile.as_posix()
 
 class JavaProcess(Process):
-    def __init__(self, sourcefile, nickname = ''):
+    def __init__(self, sourcefile, nickname = '',parameters=[]):
         super().__init__(sourcefile,nickname=nickname)
         self.classpath = self.sourcefile.parent.as_posix()
         self.classfile = self.sourcefile.with_suffix('.class')
@@ -26,7 +29,8 @@ class JavaProcess(Process):
         if (not self.classfile.exists()) or self.sourcefile.stat().st_mtime > self.classfile.stat().st_mtime:
             print('compile {}'.format([javac, '-cp',self.classpath, self.sourcefile.as_posix()]))
             subprocess.run([javac, '-cp',self.classpath, self.sourcefile.as_posix()],check=True)
-        self.aslist=[java, '-cp', self.classpath,self.sourcefile.stem]
+        self.aslist=[java, '-cp', self.classpath,
+                self.sourcefile.stem] + parameters
 
 class PythonProcess(Process):
     def __init__(self, sourcefile,nickname=''):

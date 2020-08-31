@@ -8,7 +8,7 @@ This page describes a consistent configuration for each operating system. The go
 
 ## [Windows only] Windows Subsystem for Linux (WSL)
 
-Since you will work with UNIX-based tools (such as bash scripts and the terminal), please install and activate the Linux subsystem in Windows. This is a small Ubuntu distribution that works without the need for a virtual machine or dual-boot. To activate the WSL, follow [these instructions](https://docs.microsoft.com/en-us/windows/wsl/install-win10) and install Ubuntu 18.04.
+Since you will work with UNIX-based tools (such as bash scripts and the terminal), please install and activate the Linux subsystem in Windows. This is a small Ubuntu distribution that works without the need for a virtual machine or dual-boot. To activate the WSL, follow [these instructions](https://docs.microsoft.com/en-us/windows/wsl/install-win10) and install Ubuntu 20.04 (or, if not available, you can also use 18.04).
 
 ## Java
 

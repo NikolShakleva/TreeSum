@@ -23,7 +23,7 @@ class JavaProcess(Process):
         self.classpath = self.sourcefile.parent.as_posix()
         self.classfile = self.sourcefile.with_suffix('.class')
         # print(self.classfile)
-        if self.sourcefile.stat().st_mtime > self.classfile.stat().st_mtime:
+        if (not self.classfile.exists()) or self.sourcefile.stat().st_mtime > self.classfile.stat().st_mtime:
             print('compile {}'.format([javac, '-cp',self.classpath, self.sourcefile.as_posix()]))
             subprocess.run([javac, '-cp',self.classpath, self.sourcefile.as_posix()],check=True)
         self.aslist=[java, '-cp', self.classpath,self.sourcefile.stem]
@@ -33,6 +33,16 @@ class PythonProcess(Process):
         super().__init__(sourcefile,nickname=nickname)
         self.aslist=[python, sourcefile]
 
+class RustProcess(Process):
+    def __init__(self, source, nickname = '',parameters=[]):
+        super().__init__(Path(source)/'src/main.rs',nickname=nickname)
+        self.executable = Path("{0}/target/release/{0}".format(source))
+        print(self.sourcefile,self.executable)
+        if (not self.executable.exists()) or self.sourcefile.stat().st_mtime > self.executable.stat().st_mtime:
+            print('compile {}'.format([self.sourcefile.as_posix(),self.executable.as_posix()]))
+            subprocess.run(['cargo', 'build','--release'],cwd=source,check=True)
+        self.aslist=[self.executable]+parameters
+
 results = dict()
 def runExp(producer,tested,tableDir, Nlist=[100],seed = 0, results = results,timelimit = 5, hardtimelimit = 30 ):
     FastCmp = dict()
@@ -41,16 +51,16 @@ def runExp(producer,tested,tableDir, Nlist=[100],seed = 0, results = results,tim
     for i in range(4):
         myseed = seed + 7896*i
         extra = [ str(myseed) ] if seed > 0 else []
-        tableFile = tableDir / Path(producer.nickname + tested.nickname + '.table')
+        table_file = tableDir / Path(producer.nickname + tested.nickname+ '.table')
         for N in Nlist:
-            print( tableFile, producer,N,extra)
+            print( table_file, producer,N,extra)
             try:
                 start = timer()
                 ps = subprocess.Popen(tuple( producer.aslist + [str(N)] + extra), stdout=subprocess.PIPE,stderr=subprocess.DEVNULL)
                 result = subprocess.run(tested.aslist, stdin=ps.stdout,stderr=subprocess.PIPE,stdout=subprocess.PIPE,check=True, timeout=hardtimelimit)
                 ps.wait()
                 end = timer()
-            except subprocess.TimeoutExpired as e:
+            except subprocess.TimeoutExpired:
                 break
 
             measure = end-start
@@ -59,8 +69,7 @@ def runExp(producer,tested,tableDir, Nlist=[100],seed = 0, results = results,tim
             if seed > 0:
                 outp = result.stdout.decode("utf-8")
                 if (N,myseed) in results  and not results[(N,myseed)] == outp:
-                    print("different results for N={} seed={} tested={}: is={} ({}), should be {}".format(
-                        N,myseed,tested,outp,result.stderr.decode("utf-8"),results[(N,myseed)]))
+                    print("different results for N={} seed={} tested={}: is={} ({}), should be {}".format(N,myseed,tested,outp,result.stderr.decode("utf-8"),results[(N,myseed)]))
                     exit(1)
                 else:
                     results[(N,myseed)] = outp
@@ -68,10 +77,10 @@ def runExp(producer,tested,tableDir, Nlist=[100],seed = 0, results = results,tim
             if measure > timelimit:
                 break
 
-    if tableFile == '':
+    if table_file == '':
         table = sys.stdout
     else:
-        table = open(tableFile,'w')
+        table = table_file.open('w')
 
     for N in sorted(FastCmp.keys()):
         mm = FastCmp[N]
@@ -79,6 +88,7 @@ def runExp(producer,tested,tableDir, Nlist=[100],seed = 0, results = results,tim
             mean = statistics.mean(mm) 
             stddev = statistics.stdev(mm) if len(mm) > 1 else 0 
             print("{:4} {:.3f} {:.3f}".format(N,mean,stddev),file=table)
+    table.close()
 
 def prepareTableDir():
     githash = subprocess.check_output(["git","rev-parse","--short","HEAD"]).decode("utf-8")[:-1]

@@ -58,7 +58,7 @@ def runExp(producer,tested,tableDir, Nlist=[100],seed = 0, results = results,tim
         table_file = tableDir / Path(producer.nickname + tested.nickname+ '.table')
         for N in Nlist:
             prodtuple = tuple( producer.aslist + [str(N)] + extra)
-            shelltext = " ".join(prodtuple),"|"," ".join(tested.aslist)
+            shelltext = " ".join(prodtuple) +" | " +" ".join(tested.aslist)
             print( shelltext)
             try:
                 start = timer()

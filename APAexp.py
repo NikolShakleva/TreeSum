@@ -57,10 +57,12 @@ def runExp(producer,tested,tableDir, Nlist=[100],seed = 0, results = results,tim
         extra = [ str(myseed) ] if seed > 0 else []
         table_file = tableDir / Path(producer.nickname + tested.nickname+ '.table')
         for N in Nlist:
-            print( table_file, producer,N,extra)
+            prodtuple = tuple( producer.aslist + [str(N)] + extra)
+            shelltext = " ".join(prodtuple),"|"," ".join(tested.aslist)
+            print( shelltext)
             try:
                 start = timer()
-                ps = subprocess.Popen(tuple( producer.aslist + [str(N)] + extra), stdout=subprocess.PIPE,stderr=subprocess.DEVNULL)
+                ps = subprocess.Popen(prodtuple, stdout=subprocess.PIPE,stderr=subprocess.DEVNULL)
                 result = subprocess.run(tested.aslist, stdin=ps.stdout,stderr=subprocess.PIPE,stdout=subprocess.PIPE,check=True, timeout=hardtimelimit)
                 ps.wait()
                 end = timer()
@@ -71,12 +73,12 @@ def runExp(producer,tested,tableDir, Nlist=[100],seed = 0, results = results,tim
             FastCmp[N].append(measure)
             print("Time: " + str(measure)   )
             if seed > 0:
-                outp = result.stdout.decode("utf-8")
-                if (N,myseed) in results  and not results[(N,myseed)] == outp:
-                    print("different results for N={} seed={} tested={}: is={} ({}), should be {}".format(N,myseed,tested,outp,result.stderr.decode("utf-8"),results[(N,myseed)]))
+                outp = result.stdout.decode("utf-8").strip()
+                if (N,myseed) in results  and not results[(N,myseed)][0] == outp:
+                    print("different results for N={} seed={} tested={}: is='{}' (err: '{}'), should be '{}'".format(N,myseed,tested,outp,result.stderr.decode("utf-8").strip(),results[(N,myseed)]))
                     exit(1)
                 else:
-                    results[(N,myseed)] = outp
+                    results[(N,myseed)] = (outp,shelltext)
             #        print('Output: ' + output.decode("utf-8") )
             if measure > timelimit:
                 break

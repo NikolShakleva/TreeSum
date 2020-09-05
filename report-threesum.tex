@@ -14,7 +14,8 @@
 \usepackage{listings}
 
 \title{Comparison of several 3-Sum algorithms}
-\author{Riko Jacob (rikj@itu.dk)}
+\author{Nikol Shakleva (nikv@itu.dk)\thanks{based on the template at
+\url{https://github.itu.dk/algorithms/ThreeSum}}}
 
 \begin{document}
 \maketitle
@@ -37,10 +38,10 @@ The two algorithms are
 Both algorithms are implemented in java and python3.
 
 
-\newcommand{\tableDir}{Tables-rjx260-cce3eed}
+\newcommand{\tableDir}{Tables-DESKTOP-GVQ983C-05345d7}
 \newcommand{\xtableDir}{Tables-APALGtraining-cce3eed}
-We report on an experiment executed on a Thinkpad x260 with a i7-6500U CPU, with a  nominal frequency of 2.50GHz.
-We run serial programs, even though the CPU has 4~cores.
+We report on an experiment executed on a Thinkpad X1 Carboon with a i7-5600U CPU, with a  nominal frequency of 2.60GHz.
+We run serial programs, even though the CPU has 2~cores.
 The data can be found in \tableDir.
 The running times are determined by a python script running the testprogram as a subprocess.
 We report mean and standard deviation from 4 runs.
@@ -48,7 +49,6 @@ We aim at the longest execution time being roughly 30 seconds.
 
 The data for the triple loop algorithm in python looks like this (column 0 is size, 1 is mean, 2 is standard deviation):
 
-\pgfplotstabletypeset{\tableDir /WeedJavaSimple.table}
 
 \begin{tikzpicture}
 	\begin{axis}[

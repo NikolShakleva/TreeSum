@@ -1,0 +1,56 @@
+ M .gitignore
+ M APAexp.py
+ M Produce.java
+ M README.md
+ M Tables-APALGtraining-cce3eed/WeedJavaDict.table
+ M Tables-APALGtraining-cce3eed/WeedJavaSimple.table
+ M Tables-APALGtraining-cce3eed/WeedPythDict.table
+ M Tables-APALGtraining-cce3eed/WeedPythSimple.table
+ M Tables-APALGtraining-cce3eed/gitst.txt
+ M Tables-APALGtraining-cce3eed/versions.txt
+ D Tables-DESKTOP-GVQ983C-05345d7/PrdNoJavaDict.table
+ D Tables-DESKTOP-GVQ983C-05345d7/PrdNoJavaSimple.table
+ D Tables-DESKTOP-GVQ983C-05345d7/PrdNoPythDict.table
+ D Tables-DESKTOP-GVQ983C-05345d7/PrdNoPythSimple.table
+ D Tables-DESKTOP-GVQ983C-05345d7/PrdPtJavaDict.table
+ D Tables-DESKTOP-GVQ983C-05345d7/PrdPtJavaSimple.table
+ D Tables-DESKTOP-GVQ983C-05345d7/PrdPtPythDict.table
+ D Tables-DESKTOP-GVQ983C-05345d7/PrdPtPythSimple.table
+ D Tables-DESKTOP-GVQ983C-05345d7/WeedJavaDict.table
+ D Tables-DESKTOP-GVQ983C-05345d7/WeedJavaSimple.table
+ D Tables-DESKTOP-GVQ983C-05345d7/WeedPythDict.table
+ D Tables-DESKTOP-GVQ983C-05345d7/WeedPythSimple.table
+ D Tables-DESKTOP-GVQ983C-05345d7/gitst.txt
+ D Tables-DESKTOP-GVQ983C-05345d7/patch.diff
+ D Tables-DESKTOP-GVQ983C-05345d7/platform.txt
+ D Tables-DESKTOP-GVQ983C-05345d7/versions.txt
+ M Tables-rjx260-cce3eed/WeedJavaDict.table
+ M Tables-rjx260-cce3eed/WeedJavaSimple.table
+ M Tables-rjx260-cce3eed/WeedPythDict.table
+ M Tables-rjx260-cce3eed/WeedPythSimple.table
+ M Tables-rjx260-cce3eed/gitst.txt
+ M Tables-rjx260-cce3eed/versions.txt
+ M Tables1/WeedJavaDict.table
+ M Tables1/WeedJavaSimple.table
+ M Tables1/WeedPythDict.table
+ M Tables1/WeedPythSimple.table
+ M Tables56c1cb7/WeedJavaDict.table
+ M Tables56c1cb7/WeedJavaSimple.table
+ M Tables56c1cb7/WeedPythDict.table
+ M Tables56c1cb7/WeedPythSimple.table
+ M Tables56c1cb7/gitst.txt
+ M Weed.java
+ M allexps.py
+ M experiment.py
+ M javaSol/HashPairs.java
+ M javaSol/Simple.java
+ M myexp.py
+ M pythonSol/fastDict.py
+ M pythonSol/simple.py
+ M report-threesum.tex
+ M software.md
+?? Tables-DESKTOP-GVQ983C-2596c56/
+?? __pycache__/
+?? javaSol/HashPairsError.java
+?? pythonSol/fastDict - Copy.py
+?? report-threesum.synctex(busy)

@@ -4,11 +4,11 @@ def foursum(vals):
     N=len(vals)
     P = dict()
     for i in range(N):
-        P[+vals[i]] = i #put a different value and key in the dicionary
+        P[+vals[i]] = i
 
     for j in range(N):
         for i in range(j):
-            if P.get(-vals[i]-vals[j],0) > j:
+            # if P.get(-vals[i]-vals[j],0) > j:
                 return True
     return False
 

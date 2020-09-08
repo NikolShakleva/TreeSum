@@ -1,0 +1,4461 @@
+diff --git a/.gitignore b/.gitignore
+index a89ca08..3fc8b53 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -1,7 +1,7 @@
+-*.class
+-
+-*.aux
+-*.log
+-*.out
+-*.synctex.gz
+-report-threesum.pdf
++*.class
++
++*.aux
++*.log
++*.out
++*.synctex.gz
++report-threesum.pdf
+diff --git a/APAexp.py b/APAexp.py
+index a68b68c..0868057 100644
+--- a/APAexp.py
++++ b/APAexp.py
+@@ -1,118 +1,118 @@
+-# this is python3
+-import sys,random,subprocess,statistics,platform
+-from timeit import default_timer as timer
+-
+-from pathlib import Path
+-
+-python=sys.executable
+-if '' == python:
+-    python = 'python3'
+-# you may need to overwrite this in certain situations
+-java="java"
+-javac="javac"
+-
+-# compilation on init (object creation)
+-# all filenames are Path()
+-class Process:
+-    def __init__(self,sourcefile,nickname = ''):
+-        self.sourcefile = Path(sourcefile)
+-        self.nickname = self.sourcefile.stem if nickname == '' else nickname
+-    def __repr__(self):
+-        return "Process " + self.sourcefile.as_posix()
+-
+-class JavaProcess(Process):
+-    def __init__(self, sourcefile, nickname = '',parameters=[]):
+-        super().__init__(sourcefile,nickname=nickname)
+-        self.classpath = self.sourcefile.parent.as_posix()
+-        self.classfile = self.sourcefile.with_suffix('.class')
+-        # print(self.classfile)
+-        if (not self.classfile.exists()) or self.sourcefile.stat().st_mtime > self.classfile.stat().st_mtime:
+-            print('compile {}'.format([javac, '-cp',self.classpath, self.sourcefile.as_posix()]))
+-            subprocess.run([javac, '-cp',self.classpath, self.sourcefile.as_posix()],check=True)
+-        self.aslist=[java, '-cp', self.classpath,
+-                self.sourcefile.stem] + parameters
+-
+-class PythonProcess(Process):
+-    def __init__(self, sourcefile,nickname=''):
+-        super().__init__(sourcefile,nickname=nickname)
+-        self.aslist=[python, sourcefile]
+-
+-class RustProcess(Process):
+-    def __init__(self, source, nickname = '',parameters=[]):
+-        super().__init__(Path(source)/'src/main.rs',nickname=nickname)
+-        self.executable = Path("{0}/target/release/{0}".format(source))
+-        print(self.sourcefile,self.executable)
+-        if (not self.executable.exists()) or self.sourcefile.stat().st_mtime > self.executable.stat().st_mtime:
+-            print('compile {}'.format([self.sourcefile.as_posix(),self.executable.as_posix()]))
+-            subprocess.run(['cargo', 'build','--release'],cwd=source,check=True)
+-        self.aslist=[self.executable]+parameters
+-
+-results = dict()
+-def runExp(producer,tested,tableDir, Nlist=[100],seed = 0, results = results,timelimit = 5, hardtimelimit = 30 ):
+-    FastCmp = dict()
+-    for N in Nlist:
+-        FastCmp[N]=[]
+-    for i in range(4):
+-        myseed = seed + 7896*i
+-        extra = [ str(myseed) ] if seed > 0 else []
+-        table_file = tableDir / Path(producer.nickname + tested.nickname+ '.table')
+-        for N in Nlist:
+-            prodtuple = tuple( producer.aslist + [str(N)] + extra)
+-            shelltext = " ".join(prodtuple) +" | " +" ".join(tested.aslist)
+-            print( shelltext)
+-            try:
+-                start = timer()
+-                ps = subprocess.Popen(prodtuple, stdout=subprocess.PIPE,stderr=subprocess.DEVNULL)
+-                result = subprocess.run(tested.aslist, stdin=ps.stdout,stderr=subprocess.PIPE,stdout=subprocess.PIPE,check=True, timeout=hardtimelimit)
+-                ps.wait()
+-                end = timer()
+-            except subprocess.TimeoutExpired:
+-                break
+-
+-            measure = end-start
+-            FastCmp[N].append(measure)
+-            print("Time: " + str(measure)   )
+-            if seed > 0:
+-                outp = result.stdout.decode("utf-8").strip()
+-                if (N,myseed) in results  and not results[(N,myseed)][0] == outp:
+-                    print("different results for N={} seed={} tested={}: is='{}' (err: '{}'), should be '{}'".format(N,myseed,tested,outp,result.stderr.decode("utf-8").strip(),results[(N,myseed)]))
+-                    exit(1)
+-                else:
+-                    results[(N,myseed)] = (outp,shelltext)
+-            #        print('Output: ' + output.decode("utf-8") )
+-            if measure > timelimit:
+-                break
+-
+-    if table_file == '':
+-        table = sys.stdout
+-    else:
+-        table = table_file.open('w')
+-
+-    for N in sorted(FastCmp.keys()):
+-        mm = FastCmp[N]
+-        if len(mm) > 0: ## mean and stddev are somewhat arbitrary - we'll get back to this later in the course
+-            mean = statistics.mean(mm) 
+-            stddev = statistics.stdev(mm) if len(mm) > 1 else 0 
+-            print("{:4} {:.3f} {:.3f}".format(N,mean,stddev),file=table)
+-    table.close()
+-
+-def prepareTableDir():
+-    githash = subprocess.check_output(["git","rev-parse","--short","HEAD"]).decode("utf-8")[:-1]
+-    nodename = platform.node()
+-
+-    TableDir="./Tables-{}-{}".format(nodename,githash)
+-    i=1
+-    while Path(TableDir).exists():
+-        TableDir="./Tables{}-{}-{:02}".format(githash,nodename,i)
+-        i += 1
+-    testdir = Path(TableDir)
+-    testdir.mkdir() # force it to be empty - parents=True, exist_ok=True)
+-    if len(subprocess.check_output(["git","status","--porcelain"])) > 0:
+-        subprocess.run("cd {0}; git status --porcelain > gitst.txt; git diff > patch.diff".format(TableDir),shell=True)
+-
+-    subprocess.run("cd {}; ({} --version; {} -version;{} -version) > versions.txt".format(TableDir,python,javac,java),shell=True)
+-
+-    with (testdir / 'platform.txt').open('w') as pf:
+-        print(platform.platform(), file=pf)
+-        print(platform.processor(), file=pf)
+-    return testdir
++# this is python3
++import sys,random,subprocess,statistics,platform
++from timeit import default_timer as timer
++
++from pathlib import Path
++
++python=sys.executable
++if '' == python:
++    python = 'python3'
++# you may need to overwrite this in certain situations
++java="java"
++javac="javac"
++
++# compilation on init (object creation)
++# all filenames are Path()
++class Process:
++    def __init__(self,sourcefile,nickname = ''):
++        self.sourcefile = Path(sourcefile)
++        self.nickname = self.sourcefile.stem if nickname == '' else nickname
++    def __repr__(self):
++        return "Process " + self.sourcefile.as_posix()
++
++class JavaProcess(Process):
++    def __init__(self, sourcefile, nickname = '',parameters=[]):
++        super().__init__(sourcefile,nickname=nickname)
++        self.classpath = self.sourcefile.parent.as_posix()
++        self.classfile = self.sourcefile.with_suffix('.class')
++        # print(self.classfile)
++        if (not self.classfile.exists()) or self.sourcefile.stat().st_mtime > self.classfile.stat().st_mtime:
++            print('compile {}'.format([javac, '-cp',self.classpath, self.sourcefile.as_posix()]))
++            subprocess.run([javac, '-cp',self.classpath, self.sourcefile.as_posix()],check=True)
++        self.aslist=[java, '-cp', self.classpath,
++                self.sourcefile.stem] + parameters
++
++class PythonProcess(Process):
++    def __init__(self, sourcefile,nickname=''):
++        super().__init__(sourcefile,nickname=nickname)
++        self.aslist=[python, sourcefile]
++
++class RustProcess(Process):
++    def __init__(self, source, nickname = '',parameters=[]):
++        super().__init__(Path(source)/'src/main.rs',nickname=nickname)
++        self.executable = Path("{0}/target/release/{0}".format(source))
++        print(self.sourcefile,self.executable)
++        if (not self.executable.exists()) or self.sourcefile.stat().st_mtime > self.executable.stat().st_mtime:
++            print('compile {}'.format([self.sourcefile.as_posix(),self.executable.as_posix()]))
++            subprocess.run(['cargo', 'build','--release'],cwd=source,check=True)
++        self.aslist=[self.executable]+parameters
++
++results = dict()
++def runExp(producer,tested,tableDir, Nlist=[100],seed = 0, results = results,timelimit = 5, hardtimelimit = 30 ):
++    FastCmp = dict()
++    for N in Nlist:
++        FastCmp[N]=[]
++    for i in range(4):
++        myseed = seed + 7896*i
++        extra = [ str(myseed) ] if seed > 0 else []
++        table_file = tableDir / Path(producer.nickname + tested.nickname+ '.table')
++        for N in Nlist:
++            prodtuple = tuple( producer.aslist + [str(N)] + extra)
++            shelltext = " ".join(prodtuple) +" | " +" ".join(tested.aslist)
++            print( shelltext)
++            try:
++                start = timer()
++                ps = subprocess.Popen(prodtuple, stdout=subprocess.PIPE,stderr=subprocess.DEVNULL)
++                result = subprocess.run(tested.aslist, stdin=ps.stdout,stderr=subprocess.PIPE,stdout=subprocess.PIPE,check=True, timeout=hardtimelimit)
++                ps.wait()
++                end = timer()
++            except subprocess.TimeoutExpired:
++                break
++
++            measure = end-start
++            FastCmp[N].append(measure)
++            print("Time: " + str(measure)   )
++            if seed > 0:
++                outp = result.stdout.decode("utf-8").strip()
++                if (N,myseed) in results  and not results[(N,myseed)][0] == outp:
++                    print("different results for N={} seed={} tested={}: is='{}' (err: '{}'), should be '{}'".format(N,myseed,tested,outp,result.stderr.decode("utf-8").strip(),results[(N,myseed)]))
++                    exit(1)
++                else:
++                    results[(N,myseed)] = (outp,shelltext)
++            #        print('Output: ' + output.decode("utf-8") )
++            if measure > timelimit:
++                break
++
++    if table_file == '':
++        table = sys.stdout
++    else:
++        table = table_file.open('w')
++
++    for N in sorted(FastCmp.keys()):
++        mm = FastCmp[N]
++        if len(mm) > 0: ## mean and stddev are somewhat arbitrary - we'll get back to this later in the course
++            mean = statistics.mean(mm) 
++            stddev = statistics.stdev(mm) if len(mm) > 1 else 0 
++            print("{:4} {:.3f} {:.3f}".format(N,mean,stddev),file=table)
++    table.close()
++
++def prepareTableDir():
++    githash = subprocess.check_output(["git","rev-parse","--short","HEAD"]).decode("utf-8")[:-1]
++    nodename = platform.node()
++
++    TableDir="./Tables-{}-{}".format(nodename,githash)
++    i=1
++    while Path(TableDir).exists():
++        TableDir="./Tables{}-{}-{:02}".format(githash,nodename,i)
++        i += 1
++    testdir = Path(TableDir)
++    testdir.mkdir() # force it to be empty - parents=True, exist_ok=True)
++    if len(subprocess.check_output(["git","status","--porcelain"])) > 0:
++        subprocess.run("cd {0}; git status --porcelain > gitst.txt; git diff > patch.diff".format(TableDir),shell=True)
++
++    subprocess.run("cd {}; ({} --version; {} -version;{} -version) > versions.txt".format(TableDir,python,javac,java),shell=True)
++
++    with (testdir / 'platform.txt').open('w') as pf:
++        print(platform.platform(), file=pf)
++        print(platform.processor(), file=pf)
++    return testdir
+diff --git a/Produce.java b/Produce.java
+index 33440e6..8072da5 100644
+--- a/Produce.java
++++ b/Produce.java
+@@ -1,43 +1,56 @@
+-import java.util.Random;
+-import java.util.ArrayList;
+-import java.util.List;
+-import java.util.Collections;
+-
+-public class Produce
+-{
+-
+-	public static long mynextLong(Random R) {
+-		return R.nextLong() / 4;
+-	}
+-    public static void main(final String[] args) {
+-		final String mode = args[0];
+-		final int N = Integer.parseInt(args[1]);
+-		final Random R = new Random();
+-		R.setSeed(Long.parseLong(args[2]) + N);			
+-
+-		if( N <= 3) {
+-			System.err.println("N is too small: "+N);
+-			System.exit(1);
+-		}
+-
+-		final List<Long> vals = new ArrayList<>();
+-
+-		vals.add(mynextLong(R));
+-		vals.add(mynextLong(R));
+-		switch (mode) {
+-			case "no": vals.add(mynextLong(R));
+-				break;
+-			case "plant": vals.add(-vals.get(0)-vals.get(1));
+-				break;
+-			default:
+-				System.err.println("Unknown mode: "+mode);
+-		}
+-		for (int i = 3; i<N; ++i)
+-			vals.add(mynextLong(R));
+-		
+-		Collections.shuffle(vals,R);
+-
+-		System.out.println(N);
+-		for (int i = 0; i<N; ++i) System.out.println(vals.get(i));
+-    }
+-}
++import java.util.Random;
++import java.util.ArrayList;
++import java.util.List;
++import java.util.Collections;
++
++public class Produce
++{
++
++	public static long mynextLong(Random R) {
++		return R.nextLong() / 4;
++	}
++    public static void main(final String[] args) {
++		 final String mode = args[0];
++		//final String mode = "plant";
++		 final int N = Integer.parseInt(args[1]);
++		//final int N = 10;
++		final Random R = new Random();
++		 R.setSeed(Long.parseLong(args[2]) + N);	
++		//R.setSeed(Long.parseLong("12" + N));
++		
++	//if two instances of Random are created with the same seed, and the same sequence of
++	// method calls is made for each, they will generate and return identical sequences of numbers.
++	//In order to guarantee this property, particular algorithms are specified for the class Random.
++	//Java implementations must use all the algorithms shown here for the class Random, for the sake
++	//of absolute portability of Java code. However, subclasses of class Random are permitted to use other algorithms, 
++	//so long as they adhere to the general contracts for all the methods.
++
++		if( N <= 3) {
++			System.err.println("N is too small: "+N);
++			System.exit(1);
++		}
++
++		final List<Long> vals = new ArrayList<>();
++
++		vals.add(mynextLong(R));
++		vals.add(mynextLong(R));
++
++		switch (mode) {
++			case "no": vals.add(mynextLong(R));
++				break;
++			case "plant": vals.add(-vals.get(0)-vals.get(1));
++				break;
++			case "mistake":  vals.add(-2*vals.get(0));
++				break;
++			default:
++				System.err.println("Unknown mode: "+mode);
++		}
++		for (int i = 3; i<N; ++i)
++			vals.add(mynextLong(R));
++		
++		Collections.shuffle(vals,R);
++
++		System.out.println(N);
++		for (int i = 0; i<N; ++i) System.out.println(vals.get(i));
++    }
++}
+diff --git a/README.md b/README.md
+index a64ebd2..c5f151b 100644
+--- a/README.md
++++ b/README.md
+@@ -1,24 +1,24 @@
+-# README ThreeSum
+-
+-This repository is meant as a skeleton to experimentally analyse different algorithms.
+-The example is the 3-sum problem, i.e., given a list of integers, are there 3 different positions whose values add to 0
+-(cf. Sedgewick Wayne, Chapter 1.4).
+-
+-You are invited to use this skeleton to make sure your toolchain is ready to do similar experiments. Please check the installation guide in the `software.md` file.
+-
+-Here are some tasks:
+-
+-- Fork (or duplicate, I am not sure what is better) this repository
+-- Clone your duplicate to your local machine (or your cloud server or whatever machine you play with)
+-- Compile the LaTeX source with `pdflatex report-threesum.tex`.  This checks your LaTeX installation.
+-- Add yourself as an author (attributing the original source).
+-- Rerun the experiments with `python3 experiment.py`.  For this to  work, you need `python3` and a java installation (at least). Furthermore, we use (not in all programs) the `algs4` library from the Sedgewick/Wayne book. Please refer to `software.md` for a full installation guide.
+-- As is, `experiments.py` aims at the longest runs taking a little more than 5 seconds.  For the purpose of playing with the script, change the time limits and the list of input sizes to something small, to run an experiment set the limit to 30 seconds and include sufficiently large input sizes.
+-  Every time you run the `experiment.py` script, it creates a new folder.  
+-  Once you are happy with the experiment (for a start: it does not fail, only installed software is used)
+-- Recompile the LaTeX source (don't forget to adjust the tables directory)
+-- adjust the constant factors at the helper lines in the plot to reflect your machine
+-- Implement a variant, let's say the version with binary search and include it into the experiments
+-- copy the hash-based version (in both languages) and remove the comparison (java `&& l<j` or `if P.get(-vals[i]-vals[j],0) > j:` in python).  Search for input that shows that the new version is incorrect.  Perhaps you change `Weed.java` or you handcraft inputs and include them into `experiments.py`.
+-
+-We will use the first exercise slot to help you setting up the tool chain on your machine.
++# README ThreeSum
++
++This repository is meant as a skeleton to experimentally analyse different algorithms.
++The example is the 3-sum problem, i.e., given a list of integers, are there 3 different positions whose values add to 0
++(cf. Sedgewick Wayne, Chapter 1.4).
++
++You are invited to use this skeleton to make sure your toolchain is ready to do similar experiments. Please check the installation guide in the `software.md` file.
++
++Here are some tasks:
++
++- Fork (or duplicate, I am not sure what is better) this repository
++- Clone your duplicate to your local machine (or your cloud server or whatever machine you play with)
++- Compile the LaTeX source with `pdflatex report-threesum.tex`.  This checks your LaTeX installation.
++- Add yourself as an author (attributing the original source).
++- Rerun the experiments with `python3 experiment.py`.  For this to  work, you need `python3` and a java installation (at least). Furthermore, we use (not in all programs) the `algs4` library from the Sedgewick/Wayne book. Please refer to `software.md` for a full installation guide.
++- As is, `experiments.py` aims at the longest runs taking a little more than 5 seconds.  For the purpose of playing with the script, change the time limits and the list of input sizes to something small, to run an experiment set the limit to 30 seconds and include sufficiently large input sizes.
++  Every time you run the `experiment.py` script, it creates a new folder.  
++  Once you are happy with the experiment (for a start: it does not fail, only installed software is used)
++- Recompile the LaTeX source (don't forget to adjust the tables directory)
++- adjust the constant factors at the helper lines in the plot to reflect your machine
++- Implement a variant, let's say the version with binary search and include it into the experiments
++- copy the hash-based version (in both languages) and remove the comparison (java `&& l<j` or `if P.get(-vals[i]-vals[j],0) > j:` in python).  Search for input that shows that the new version is incorrect.  Perhaps you change `Weed.java` or you handcraft inputs and include them into `experiments.py`.
++
++We will use the first exercise slot to help you setting up the tool chain on your machine.
+diff --git a/Tables-APALGtraining-cce3eed/WeedJavaDict.table b/Tables-APALGtraining-cce3eed/WeedJavaDict.table
+index d8892dc..3c32f43 100644
+--- a/Tables-APALGtraining-cce3eed/WeedJavaDict.table
++++ b/Tables-APALGtraining-cce3eed/WeedJavaDict.table
+@@ -1,23 +1,23 @@
+-  30 0.100 0.004
+-  42 0.099 0.010
+-  59 0.093 0.004
+-  84 0.096 0.001
+- 118 0.104 0.006
+- 167 0.104 0.004
+- 235 0.105 0.005
+- 332 0.113 0.007
+- 468 0.121 0.012
+- 660 0.125 0.003
+- 931 0.128 0.003
+-1313 0.146 0.008
+-1852 0.162 0.012
+-2611 0.224 0.026
+-3682 0.334 0.020
+-5192 0.550 0.014
+-7321 0.815 0.008
+-10323 1.629 0.027
+-14556 2.844 0.210
+-20525 6.741 0.053
+-28940 11.542 0.036
+-40805 25.387 2.086
+-57536 43.701 3.118
++  30 0.100 0.004
++  42 0.099 0.010
++  59 0.093 0.004
++  84 0.096 0.001
++ 118 0.104 0.006
++ 167 0.104 0.004
++ 235 0.105 0.005
++ 332 0.113 0.007
++ 468 0.121 0.012
++ 660 0.125 0.003
++ 931 0.128 0.003
++1313 0.146 0.008
++1852 0.162 0.012
++2611 0.224 0.026
++3682 0.334 0.020
++5192 0.550 0.014
++7321 0.815 0.008
++10323 1.629 0.027
++14556 2.844 0.210
++20525 6.741 0.053
++28940 11.542 0.036
++40805 25.387 2.086
++57536 43.701 3.118
+diff --git a/Tables-APALGtraining-cce3eed/WeedJavaSimple.table b/Tables-APALGtraining-cce3eed/WeedJavaSimple.table
+index 4193590..40a9a2b 100644
+--- a/Tables-APALGtraining-cce3eed/WeedJavaSimple.table
++++ b/Tables-APALGtraining-cce3eed/WeedJavaSimple.table
+@@ -1,17 +1,17 @@
+-  30 0.095 0.005
+-  42 0.096 0.005
+-  59 0.095 0.003
+-  84 0.103 0.007
+- 118 0.110 0.007
+- 167 0.108 0.006
+- 235 0.107 0.007
+- 332 0.115 0.008
+- 468 0.123 0.005
+- 660 0.151 0.003
+- 931 0.228 0.005
+-1313 0.421 0.017
+-1852 0.935 0.010
+-2611 2.369 0.008
+-3682 6.388 0.087
+-5192 17.618 0.258
+-7321 48.755 0.075
++  30 0.095 0.005
++  42 0.096 0.005
++  59 0.095 0.003
++  84 0.103 0.007
++ 118 0.110 0.007
++ 167 0.108 0.006
++ 235 0.107 0.007
++ 332 0.115 0.008
++ 468 0.123 0.005
++ 660 0.151 0.003
++ 931 0.228 0.005
++1313 0.421 0.017
++1852 0.935 0.010
++2611 2.369 0.008
++3682 6.388 0.087
++5192 17.618 0.258
++7321 48.755 0.075
+diff --git a/Tables-APALGtraining-cce3eed/WeedPythDict.table b/Tables-APALGtraining-cce3eed/WeedPythDict.table
+index 6383698..4cd1a9e 100644
+--- a/Tables-APALGtraining-cce3eed/WeedPythDict.table
++++ b/Tables-APALGtraining-cce3eed/WeedPythDict.table
+@@ -1,19 +1,19 @@
+-  30 0.071 0.001
+-  42 0.070 0.000
+-  59 0.072 0.001
+-  84 0.073 0.001
+- 118 0.078 0.005
+- 167 0.083 0.006
+- 235 0.091 0.005
+- 332 0.100 0.006
+- 468 0.122 0.007
+- 660 0.160 0.007
+- 931 0.230 0.007
+-1313 0.373 0.011
+-1852 0.633 0.010
+-2611 1.190 0.008
+-3682 2.241 0.008
+-5192 4.423 0.022
+-7321 8.688 0.048
+-10323 17.498 0.062
+-14556 34.492 0.294
++  30 0.071 0.001
++  42 0.070 0.000
++  59 0.072 0.001
++  84 0.073 0.001
++ 118 0.078 0.005
++ 167 0.083 0.006
++ 235 0.091 0.005
++ 332 0.100 0.006
++ 468 0.122 0.007
++ 660 0.160 0.007
++ 931 0.230 0.007
++1313 0.373 0.011
++1852 0.633 0.010
++2611 1.190 0.008
++3682 2.241 0.008
++5192 4.423 0.022
++7321 8.688 0.048
++10323 17.498 0.062
++14556 34.492 0.294
+diff --git a/Tables-APALGtraining-cce3eed/WeedPythSimple.table b/Tables-APALGtraining-cce3eed/WeedPythSimple.table
+index 23808b8..45576ef 100644
+--- a/Tables-APALGtraining-cce3eed/WeedPythSimple.table
++++ b/Tables-APALGtraining-cce3eed/WeedPythSimple.table
+@@ -1,11 +1,11 @@
+-  30 0.074 0.004
+-  42 0.073 0.001
+-  59 0.083 0.005
+-  84 0.101 0.002
+- 118 0.154 0.006
+- 167 0.302 0.009
+- 235 0.694 0.021
+- 332 1.907 0.169
+- 468 4.988 0.063
+- 660 14.011 0.370
+- 931 39.138 1.198
++  30 0.074 0.004
++  42 0.073 0.001
++  59 0.083 0.005
++  84 0.101 0.002
++ 118 0.154 0.006
++ 167 0.302 0.009
++ 235 0.694 0.021
++ 332 1.907 0.169
++ 468 4.988 0.063
++ 660 14.011 0.370
++ 931 39.138 1.198
+diff --git a/Tables-APALGtraining-cce3eed/gitst.txt b/Tables-APALGtraining-cce3eed/gitst.txt
+index b12bd36..24fc9ef 100644
+--- a/Tables-APALGtraining-cce3eed/gitst.txt
++++ b/Tables-APALGtraining-cce3eed/gitst.txt
+@@ -1,6 +1,6 @@
+-?? Tables-APALGtraining-851bf65/
+-?? Tables-APALGtraining-cce3eed/
+-?? Tables851bf65-01/
+-?? Tables851bf65-02/
+-?? Tables851bf65-03/
+-?? Tables851bf65-APALGtraining-01/
++?? Tables-APALGtraining-851bf65/
++?? Tables-APALGtraining-cce3eed/
++?? Tables851bf65-01/
++?? Tables851bf65-02/
++?? Tables851bf65-03/
++?? Tables851bf65-APALGtraining-01/
+diff --git a/Tables-APALGtraining-cce3eed/versions.txt b/Tables-APALGtraining-cce3eed/versions.txt
+index 3dc8ad5..eefea37 100644
+--- a/Tables-APALGtraining-cce3eed/versions.txt
++++ b/Tables-APALGtraining-cce3eed/versions.txt
+@@ -1 +1 @@
+-Python 3.5.2
++Python 3.5.2
+diff --git a/Tables-DESKTOP-GVQ983C-05345d7/PrdNoJavaDict.table b/Tables-DESKTOP-GVQ983C-05345d7/PrdNoJavaDict.table
+deleted file mode 100644
+index aa6214a..0000000
+--- a/Tables-DESKTOP-GVQ983C-05345d7/PrdNoJavaDict.table
++++ /dev/null
+@@ -1,2 +0,0 @@
+-  10 0.507 0.003
+-  50 0.526 0.011
+diff --git a/Tables-DESKTOP-GVQ983C-05345d7/PrdNoJavaSimple.table b/Tables-DESKTOP-GVQ983C-05345d7/PrdNoJavaSimple.table
+deleted file mode 100644
+index 6fe82f8..0000000
+--- a/Tables-DESKTOP-GVQ983C-05345d7/PrdNoJavaSimple.table
++++ /dev/null
+@@ -1,2 +0,0 @@
+-  10 0.543 0.035
+-  50 0.521 0.006
+diff --git a/Tables-DESKTOP-GVQ983C-05345d7/PrdNoPythDict.table b/Tables-DESKTOP-GVQ983C-05345d7/PrdNoPythDict.table
+deleted file mode 100644
+index 960db9e..0000000
+--- a/Tables-DESKTOP-GVQ983C-05345d7/PrdNoPythDict.table
++++ /dev/null
+@@ -1,2 +0,0 @@
+-  10 0.332 0.014
+-  50 0.341 0.013
+diff --git a/Tables-DESKTOP-GVQ983C-05345d7/PrdNoPythSimple.table b/Tables-DESKTOP-GVQ983C-05345d7/PrdNoPythSimple.table
+deleted file mode 100644
+index a3021b0..0000000
+--- a/Tables-DESKTOP-GVQ983C-05345d7/PrdNoPythSimple.table
++++ /dev/null
+@@ -1,2 +0,0 @@
+-  10 0.322 0.006
+-  50 0.348 0.007
+diff --git a/Tables-DESKTOP-GVQ983C-05345d7/PrdPtJavaDict.table b/Tables-DESKTOP-GVQ983C-05345d7/PrdPtJavaDict.table
+deleted file mode 100644
+index cdd6a2d..0000000
+--- a/Tables-DESKTOP-GVQ983C-05345d7/PrdPtJavaDict.table
++++ /dev/null
+@@ -1,2 +0,0 @@
+-  10 0.512 0.009
+-  50 0.522 0.011
+diff --git a/Tables-DESKTOP-GVQ983C-05345d7/PrdPtJavaSimple.table b/Tables-DESKTOP-GVQ983C-05345d7/PrdPtJavaSimple.table
+deleted file mode 100644
+index 465bdbd..0000000
+--- a/Tables-DESKTOP-GVQ983C-05345d7/PrdPtJavaSimple.table
++++ /dev/null
+@@ -1,2 +0,0 @@
+-  10 0.679 0.023
+-  50 0.675 0.023
+diff --git a/Tables-DESKTOP-GVQ983C-05345d7/PrdPtPythDict.table b/Tables-DESKTOP-GVQ983C-05345d7/PrdPtPythDict.table
+deleted file mode 100644
+index 7e999a4..0000000
+--- a/Tables-DESKTOP-GVQ983C-05345d7/PrdPtPythDict.table
++++ /dev/null
+@@ -1,2 +0,0 @@
+-  10 0.324 0.004
+-  50 0.333 0.007
+diff --git a/Tables-DESKTOP-GVQ983C-05345d7/PrdPtPythSimple.table b/Tables-DESKTOP-GVQ983C-05345d7/PrdPtPythSimple.table
+deleted file mode 100644
+index 35ab6bb..0000000
+--- a/Tables-DESKTOP-GVQ983C-05345d7/PrdPtPythSimple.table
++++ /dev/null
+@@ -1,2 +0,0 @@
+-  10 0.322 0.007
+-  50 0.344 0.005
+diff --git a/Tables-DESKTOP-GVQ983C-05345d7/WeedJavaDict.table b/Tables-DESKTOP-GVQ983C-05345d7/WeedJavaDict.table
+deleted file mode 100644
+index b88f301..0000000
+--- a/Tables-DESKTOP-GVQ983C-05345d7/WeedJavaDict.table
++++ /dev/null
+@@ -1,2 +0,0 @@
+-  90 0.572 0.096
+- 126 0.575 0.050
+diff --git a/Tables-DESKTOP-GVQ983C-05345d7/WeedJavaSimple.table b/Tables-DESKTOP-GVQ983C-05345d7/WeedJavaSimple.table
+deleted file mode 100644
+index b088644..0000000
+--- a/Tables-DESKTOP-GVQ983C-05345d7/WeedJavaSimple.table
++++ /dev/null
+@@ -1,2 +0,0 @@
+-  90 0.559 0.012
+- 126 0.557 0.018
+diff --git a/Tables-DESKTOP-GVQ983C-05345d7/WeedPythDict.table b/Tables-DESKTOP-GVQ983C-05345d7/WeedPythDict.table
+deleted file mode 100644
+index 98a9e31..0000000
+--- a/Tables-DESKTOP-GVQ983C-05345d7/WeedPythDict.table
++++ /dev/null
+@@ -1,2 +0,0 @@
+-  90 0.331 0.007
+- 126 0.358 0.019
+diff --git a/Tables-DESKTOP-GVQ983C-05345d7/WeedPythSimple.table b/Tables-DESKTOP-GVQ983C-05345d7/WeedPythSimple.table
+deleted file mode 100644
+index d531422..0000000
+--- a/Tables-DESKTOP-GVQ983C-05345d7/WeedPythSimple.table
++++ /dev/null
+@@ -1,2 +0,0 @@
+-  90 0.417 0.015
+- 126 0.548 0.018
+diff --git a/Tables-DESKTOP-GVQ983C-05345d7/gitst.txt b/Tables-DESKTOP-GVQ983C-05345d7/gitst.txt
+deleted file mode 100644
+index 39357f4..0000000
+--- a/Tables-DESKTOP-GVQ983C-05345d7/gitst.txt
++++ /dev/null
+@@ -1,38 +0,0 @@
+- M .gitignore
+- M APAexp.py
+- M Produce.java
+- M README.md
+- M Tables-APALGtraining-cce3eed/WeedJavaDict.table
+- M Tables-APALGtraining-cce3eed/WeedJavaSimple.table
+- M Tables-APALGtraining-cce3eed/WeedPythDict.table
+- M Tables-APALGtraining-cce3eed/WeedPythSimple.table
+- M Tables-APALGtraining-cce3eed/gitst.txt
+- M Tables-APALGtraining-cce3eed/versions.txt
+- M Tables-rjx260-cce3eed/WeedJavaDict.table
+- M Tables-rjx260-cce3eed/WeedJavaSimple.table
+- M Tables-rjx260-cce3eed/WeedPythDict.table
+- M Tables-rjx260-cce3eed/WeedPythSimple.table
+- M Tables-rjx260-cce3eed/gitst.txt
+- M Tables-rjx260-cce3eed/versions.txt
+- M Tables1/WeedJavaDict.table
+- M Tables1/WeedJavaSimple.table
+- M Tables1/WeedPythDict.table
+- M Tables1/WeedPythSimple.table
+- M Tables56c1cb7/WeedJavaDict.table
+- M Tables56c1cb7/WeedJavaSimple.table
+- M Tables56c1cb7/WeedPythDict.table
+- M Tables56c1cb7/WeedPythSimple.table
+- M Tables56c1cb7/gitst.txt
+- M Weed.java
+- M allexps.py
+- M experiment.py
+- M javaSol/HashPairs.java
+- M javaSol/Simple.java
+- M myexp.py
+- M pythonSol/fastDict.py
+- M pythonSol/simple.py
+- M report-threesum.tex
+- M software.md
+-?? Tables-DESKTOP-GVQ983C-05345d7/
+-?? Tables-DESKTOP-GVQ983C-b104021/
+-?? __pycache__/
+diff --git a/Tables-DESKTOP-GVQ983C-05345d7/patch.diff b/Tables-DESKTOP-GVQ983C-05345d7/patch.diff
+deleted file mode 100644
+index b120ab9..0000000
+--- a/Tables-DESKTOP-GVQ983C-05345d7/patch.diff
++++ /dev/null
+@@ -1,2133 +0,0 @@
+-diff --git a/.gitignore b/.gitignore
+-index a89ca08..3fc8b53 100644
+---- a/.gitignore
+-+++ b/.gitignore
+-@@ -1,7 +1,7 @@
+--*.class
+--
+--*.aux
+--*.log
+--*.out
+--*.synctex.gz
+--report-threesum.pdf
+-+*.class
+-+
+-+*.aux
+-+*.log
+-+*.out
+-+*.synctex.gz
+-+report-threesum.pdf
+-diff --git a/APAexp.py b/APAexp.py
+-index a68b68c..0868057 100644
+---- a/APAexp.py
+-+++ b/APAexp.py
+-@@ -1,118 +1,118 @@
+--# this is python3
+--import sys,random,subprocess,statistics,platform
+--from timeit import default_timer as timer
+--
+--from pathlib import Path
+--
+--python=sys.executable
+--if '' == python:
+--    python = 'python3'
+--# you may need to overwrite this in certain situations
+--java="java"
+--javac="javac"
+--
+--# compilation on init (object creation)
+--# all filenames are Path()
+--class Process:
+--    def __init__(self,sourcefile,nickname = ''):
+--        self.sourcefile = Path(sourcefile)
+--        self.nickname = self.sourcefile.stem if nickname == '' else nickname
+--    def __repr__(self):
+--        return "Process " + self.sourcefile.as_posix()
+--
+--class JavaProcess(Process):
+--    def __init__(self, sourcefile, nickname = '',parameters=[]):
+--        super().__init__(sourcefile,nickname=nickname)
+--        self.classpath = self.sourcefile.parent.as_posix()
+--        self.classfile = self.sourcefile.with_suffix('.class')
+--        # print(self.classfile)
+--        if (not self.classfile.exists()) or self.sourcefile.stat().st_mtime > self.classfile.stat().st_mtime:
+--            print('compile {}'.format([javac, '-cp',self.classpath, self.sourcefile.as_posix()]))
+--            subprocess.run([javac, '-cp',self.classpath, self.sourcefile.as_posix()],check=True)
+--        self.aslist=[java, '-cp', self.classpath,
+--                self.sourcefile.stem] + parameters
+--
+--class PythonProcess(Process):
+--    def __init__(self, sourcefile,nickname=''):
+--        super().__init__(sourcefile,nickname=nickname)
+--        self.aslist=[python, sourcefile]
+--
+--class RustProcess(Process):
+--    def __init__(self, source, nickname = '',parameters=[]):
+--        super().__init__(Path(source)/'src/main.rs',nickname=nickname)
+--        self.executable = Path("{0}/target/release/{0}".format(source))
+--        print(self.sourcefile,self.executable)
+--        if (not self.executable.exists()) or self.sourcefile.stat().st_mtime > self.executable.stat().st_mtime:
+--            print('compile {}'.format([self.sourcefile.as_posix(),self.executable.as_posix()]))
+--            subprocess.run(['cargo', 'build','--release'],cwd=source,check=True)
+--        self.aslist=[self.executable]+parameters
+--
+--results = dict()
+--def runExp(producer,tested,tableDir, Nlist=[100],seed = 0, results = results,timelimit = 5, hardtimelimit = 30 ):
+--    FastCmp = dict()
+--    for N in Nlist:
+--        FastCmp[N]=[]
+--    for i in range(4):
+--        myseed = seed + 7896*i
+--        extra = [ str(myseed) ] if seed > 0 else []
+--        table_file = tableDir / Path(producer.nickname + tested.nickname+ '.table')
+--        for N in Nlist:
+--            prodtuple = tuple( producer.aslist + [str(N)] + extra)
+--            shelltext = " ".join(prodtuple) +" | " +" ".join(tested.aslist)
+--            print( shelltext)
+--            try:
+--                start = timer()
+--                ps = subprocess.Popen(prodtuple, stdout=subprocess.PIPE,stderr=subprocess.DEVNULL)
+--                result = subprocess.run(tested.aslist, stdin=ps.stdout,stderr=subprocess.PIPE,stdout=subprocess.PIPE,check=True, timeout=hardtimelimit)
+--                ps.wait()
+--                end = timer()
+--            except subprocess.TimeoutExpired:
+--                break
+--
+--            measure = end-start
+--            FastCmp[N].append(measure)
+--            print("Time: " + str(measure)   )
+--            if seed > 0:
+--                outp = result.stdout.decode("utf-8").strip()
+--                if (N,myseed) in results  and not results[(N,myseed)][0] == outp:
+--                    print("different results for N={} seed={} tested={}: is='{}' (err: '{}'), should be '{}'".format(N,myseed,tested,outp,result.stderr.decode("utf-8").strip(),results[(N,myseed)]))
+--                    exit(1)
+--                else:
+--                    results[(N,myseed)] = (outp,shelltext)
+--            #        print('Output: ' + output.decode("utf-8") )
+--            if measure > timelimit:
+--                break
+--
+--    if table_file == '':
+--        table = sys.stdout
+--    else:
+--        table = table_file.open('w')
+--
+--    for N in sorted(FastCmp.keys()):
+--        mm = FastCmp[N]
+--        if len(mm) > 0: ## mean and stddev are somewhat arbitrary - we'll get back to this later in the course
+--            mean = statistics.mean(mm) 
+--            stddev = statistics.stdev(mm) if len(mm) > 1 else 0 
+--            print("{:4} {:.3f} {:.3f}".format(N,mean,stddev),file=table)
+--    table.close()
+--
+--def prepareTableDir():
+--    githash = subprocess.check_output(["git","rev-parse","--short","HEAD"]).decode("utf-8")[:-1]
+--    nodename = platform.node()
+--
+--    TableDir="./Tables-{}-{}".format(nodename,githash)
+--    i=1
+--    while Path(TableDir).exists():
+--        TableDir="./Tables{}-{}-{:02}".format(githash,nodename,i)
+--        i += 1
+--    testdir = Path(TableDir)
+--    testdir.mkdir() # force it to be empty - parents=True, exist_ok=True)
+--    if len(subprocess.check_output(["git","status","--porcelain"])) > 0:
+--        subprocess.run("cd {0}; git status --porcelain > gitst.txt; git diff > patch.diff".format(TableDir),shell=True)
+--
+--    subprocess.run("cd {}; ({} --version; {} -version;{} -version) > versions.txt".format(TableDir,python,javac,java),shell=True)
+--
+--    with (testdir / 'platform.txt').open('w') as pf:
+--        print(platform.platform(), file=pf)
+--        print(platform.processor(), file=pf)
+--    return testdir
+-+# this is python3
+-+import sys,random,subprocess,statistics,platform
+-+from timeit import default_timer as timer
+-+
+-+from pathlib import Path
+-+
+-+python=sys.executable
+-+if '' == python:
+-+    python = 'python3'
+-+# you may need to overwrite this in certain situations
+-+java="java"
+-+javac="javac"
+-+
+-+# compilation on init (object creation)
+-+# all filenames are Path()
+-+class Process:
+-+    def __init__(self,sourcefile,nickname = ''):
+-+        self.sourcefile = Path(sourcefile)
+-+        self.nickname = self.sourcefile.stem if nickname == '' else nickname
+-+    def __repr__(self):
+-+        return "Process " + self.sourcefile.as_posix()
+-+
+-+class JavaProcess(Process):
+-+    def __init__(self, sourcefile, nickname = '',parameters=[]):
+-+        super().__init__(sourcefile,nickname=nickname)
+-+        self.classpath = self.sourcefile.parent.as_posix()
+-+        self.classfile = self.sourcefile.with_suffix('.class')
+-+        # print(self.classfile)
+-+        if (not self.classfile.exists()) or self.sourcefile.stat().st_mtime > self.classfile.stat().st_mtime:
+-+            print('compile {}'.format([javac, '-cp',self.classpath, self.sourcefile.as_posix()]))
+-+            subprocess.run([javac, '-cp',self.classpath, self.sourcefile.as_posix()],check=True)
+-+        self.aslist=[java, '-cp', self.classpath,
+-+                self.sourcefile.stem] + parameters
+-+
+-+class PythonProcess(Process):
+-+    def __init__(self, sourcefile,nickname=''):
+-+        super().__init__(sourcefile,nickname=nickname)
+-+        self.aslist=[python, sourcefile]
+-+
+-+class RustProcess(Process):
+-+    def __init__(self, source, nickname = '',parameters=[]):
+-+        super().__init__(Path(source)/'src/main.rs',nickname=nickname)
+-+        self.executable = Path("{0}/target/release/{0}".format(source))
+-+        print(self.sourcefile,self.executable)
+-+        if (not self.executable.exists()) or self.sourcefile.stat().st_mtime > self.executable.stat().st_mtime:
+-+            print('compile {}'.format([self.sourcefile.as_posix(),self.executable.as_posix()]))
+-+            subprocess.run(['cargo', 'build','--release'],cwd=source,check=True)
+-+        self.aslist=[self.executable]+parameters
+-+
+-+results = dict()
+-+def runExp(producer,tested,tableDir, Nlist=[100],seed = 0, results = results,timelimit = 5, hardtimelimit = 30 ):
+-+    FastCmp = dict()
+-+    for N in Nlist:
+-+        FastCmp[N]=[]
+-+    for i in range(4):
+-+        myseed = seed + 7896*i
+-+        extra = [ str(myseed) ] if seed > 0 else []
+-+        table_file = tableDir / Path(producer.nickname + tested.nickname+ '.table')
+-+        for N in Nlist:
+-+            prodtuple = tuple( producer.aslist + [str(N)] + extra)
+-+            shelltext = " ".join(prodtuple) +" | " +" ".join(tested.aslist)
+-+            print( shelltext)
+-+            try:
+-+                start = timer()
+-+                ps = subprocess.Popen(prodtuple, stdout=subprocess.PIPE,stderr=subprocess.DEVNULL)
+-+                result = subprocess.run(tested.aslist, stdin=ps.stdout,stderr=subprocess.PIPE,stdout=subprocess.PIPE,check=True, timeout=hardtimelimit)
+-+                ps.wait()
+-+                end = timer()
+-+            except subprocess.TimeoutExpired:
+-+                break
+-+
+-+            measure = end-start
+-+            FastCmp[N].append(measure)
+-+            print("Time: " + str(measure)   )
+-+            if seed > 0:
+-+                outp = result.stdout.decode("utf-8").strip()
+-+                if (N,myseed) in results  and not results[(N,myseed)][0] == outp:
+-+                    print("different results for N={} seed={} tested={}: is='{}' (err: '{}'), should be '{}'".format(N,myseed,tested,outp,result.stderr.decode("utf-8").strip(),results[(N,myseed)]))
+-+                    exit(1)
+-+                else:
+-+                    results[(N,myseed)] = (outp,shelltext)
+-+            #        print('Output: ' + output.decode("utf-8") )
+-+            if measure > timelimit:
+-+                break
+-+
+-+    if table_file == '':
+-+        table = sys.stdout
+-+    else:
+-+        table = table_file.open('w')
+-+
+-+    for N in sorted(FastCmp.keys()):
+-+        mm = FastCmp[N]
+-+        if len(mm) > 0: ## mean and stddev are somewhat arbitrary - we'll get back to this later in the course
+-+            mean = statistics.mean(mm) 
+-+            stddev = statistics.stdev(mm) if len(mm) > 1 else 0 
+-+            print("{:4} {:.3f} {:.3f}".format(N,mean,stddev),file=table)
+-+    table.close()
+-+
+-+def prepareTableDir():
+-+    githash = subprocess.check_output(["git","rev-parse","--short","HEAD"]).decode("utf-8")[:-1]
+-+    nodename = platform.node()
+-+
+-+    TableDir="./Tables-{}-{}".format(nodename,githash)
+-+    i=1
+-+    while Path(TableDir).exists():
+-+        TableDir="./Tables{}-{}-{:02}".format(githash,nodename,i)
+-+        i += 1
+-+    testdir = Path(TableDir)
+-+    testdir.mkdir() # force it to be empty - parents=True, exist_ok=True)
+-+    if len(subprocess.check_output(["git","status","--porcelain"])) > 0:
+-+        subprocess.run("cd {0}; git status --porcelain > gitst.txt; git diff > patch.diff".format(TableDir),shell=True)
+-+
+-+    subprocess.run("cd {}; ({} --version; {} -version;{} -version) > versions.txt".format(TableDir,python,javac,java),shell=True)
+-+
+-+    with (testdir / 'platform.txt').open('w') as pf:
+-+        print(platform.platform(), file=pf)
+-+        print(platform.processor(), file=pf)
+-+    return testdir
+-diff --git a/Produce.java b/Produce.java
+-index 33440e6..53ac8cc 100644
+---- a/Produce.java
+-+++ b/Produce.java
+-@@ -1,43 +1,43 @@
+--import java.util.Random;
+--import java.util.ArrayList;
+--import java.util.List;
+--import java.util.Collections;
+--
+--public class Produce
+--{
+--
+--	public static long mynextLong(Random R) {
+--		return R.nextLong() / 4;
+--	}
+--    public static void main(final String[] args) {
+--		final String mode = args[0];
+--		final int N = Integer.parseInt(args[1]);
+--		final Random R = new Random();
+--		R.setSeed(Long.parseLong(args[2]) + N);			
+--
+--		if( N <= 3) {
+--			System.err.println("N is too small: "+N);
+--			System.exit(1);
+--		}
+--
+--		final List<Long> vals = new ArrayList<>();
+--
+--		vals.add(mynextLong(R));
+--		vals.add(mynextLong(R));
+--		switch (mode) {
+--			case "no": vals.add(mynextLong(R));
+--				break;
+--			case "plant": vals.add(-vals.get(0)-vals.get(1));
+--				break;
+--			default:
+--				System.err.println("Unknown mode: "+mode);
+--		}
+--		for (int i = 3; i<N; ++i)
+--			vals.add(mynextLong(R));
+--		
+--		Collections.shuffle(vals,R);
+--
+--		System.out.println(N);
+--		for (int i = 0; i<N; ++i) System.out.println(vals.get(i));
+--    }
+--}
+-+import java.util.Random;
+-+import java.util.ArrayList;
+-+import java.util.List;
+-+import java.util.Collections;
+-+
+-+public class Produce
+-+{
+-+
+-+	public static long mynextLong(Random R) {
+-+		return R.nextLong() / 4;
+-+	}
+-+    public static void main(final String[] args) {
+-+		final String mode = args[0];
+-+		final int N = Integer.parseInt(args[1]);
+-+		final Random R = new Random();
+-+		R.setSeed(Long.parseLong(args[2]) + N);			
+-+
+-+		if( N <= 3) {
+-+			System.err.println("N is too small: "+N);
+-+			System.exit(1);
+-+		}
+-+
+-+		final List<Long> vals = new ArrayList<>();
+-+
+-+		vals.add(mynextLong(R));
+-+		vals.add(mynextLong(R));
+-+		switch (mode) {
+-+			case "no": vals.add(mynextLong(R));
+-+				break;
+-+			case "plant": vals.add(-vals.get(0)-vals.get(1));
+-+				break;
+-+			default:
+-+				System.err.println("Unknown mode: "+mode);
+-+		}
+-+		for (int i = 3; i<N; ++i)
+-+			vals.add(mynextLong(R));
+-+		
+-+		Collections.shuffle(vals,R);
+-+
+-+		System.out.println(N);
+-+		for (int i = 0; i<N; ++i) System.out.println(vals.get(i));
+-+    }
+-+}
+-diff --git a/README.md b/README.md
+-index a64ebd2..c5f151b 100644
+---- a/README.md
+-+++ b/README.md
+-@@ -1,24 +1,24 @@
+--# README ThreeSum
+--
+--This repository is meant as a skeleton to experimentally analyse different algorithms.
+--The example is the 3-sum problem, i.e., given a list of integers, are there 3 different positions whose values add to 0
+--(cf. Sedgewick Wayne, Chapter 1.4).
+--
+--You are invited to use this skeleton to make sure your toolchain is ready to do similar experiments. Please check the installation guide in the `software.md` file.
+--
+--Here are some tasks:
+--
+--- Fork (or duplicate, I am not sure what is better) this repository
+--- Clone your duplicate to your local machine (or your cloud server or whatever machine you play with)
+--- Compile the LaTeX source with `pdflatex report-threesum.tex`.  This checks your LaTeX installation.
+--- Add yourself as an author (attributing the original source).
+--- Rerun the experiments with `python3 experiment.py`.  For this to  work, you need `python3` and a java installation (at least). Furthermore, we use (not in all programs) the `algs4` library from the Sedgewick/Wayne book. Please refer to `software.md` for a full installation guide.
+--- As is, `experiments.py` aims at the longest runs taking a little more than 5 seconds.  For the purpose of playing with the script, change the time limits and the list of input sizes to something small, to run an experiment set the limit to 30 seconds and include sufficiently large input sizes.
+--  Every time you run the `experiment.py` script, it creates a new folder.  
+--  Once you are happy with the experiment (for a start: it does not fail, only installed software is used)
+--- Recompile the LaTeX source (don't forget to adjust the tables directory)
+--- adjust the constant factors at the helper lines in the plot to reflect your machine
+--- Implement a variant, let's say the version with binary search and include it into the experiments
+--- copy the hash-based version (in both languages) and remove the comparison (java `&& l<j` or `if P.get(-vals[i]-vals[j],0) > j:` in python).  Search for input that shows that the new version is incorrect.  Perhaps you change `Weed.java` or you handcraft inputs and include them into `experiments.py`.
+--
+--We will use the first exercise slot to help you setting up the tool chain on your machine.
+-+# README ThreeSum
+-+
+-+This repository is meant as a skeleton to experimentally analyse different algorithms.
+-+The example is the 3-sum problem, i.e., given a list of integers, are there 3 different positions whose values add to 0
+-+(cf. Sedgewick Wayne, Chapter 1.4).
+-+
+-+You are invited to use this skeleton to make sure your toolchain is ready to do similar experiments. Please check the installation guide in the `software.md` file.
+-+
+-+Here are some tasks:
+-+
+-+- Fork (or duplicate, I am not sure what is better) this repository
+-+- Clone your duplicate to your local machine (or your cloud server or whatever machine you play with)
+-+- Compile the LaTeX source with `pdflatex report-threesum.tex`.  This checks your LaTeX installation.
+-+- Add yourself as an author (attributing the original source).
+-+- Rerun the experiments with `python3 experiment.py`.  For this to  work, you need `python3` and a java installation (at least). Furthermore, we use (not in all programs) the `algs4` library from the Sedgewick/Wayne book. Please refer to `software.md` for a full installation guide.
+-+- As is, `experiments.py` aims at the longest runs taking a little more than 5 seconds.  For the purpose of playing with the script, change the time limits and the list of input sizes to something small, to run an experiment set the limit to 30 seconds and include sufficiently large input sizes.
+-+  Every time you run the `experiment.py` script, it creates a new folder.  
+-+  Once you are happy with the experiment (for a start: it does not fail, only installed software is used)
+-+- Recompile the LaTeX source (don't forget to adjust the tables directory)
+-+- adjust the constant factors at the helper lines in the plot to reflect your machine
+-+- Implement a variant, let's say the version with binary search and include it into the experiments
+-+- copy the hash-based version (in both languages) and remove the comparison (java `&& l<j` or `if P.get(-vals[i]-vals[j],0) > j:` in python).  Search for input that shows that the new version is incorrect.  Perhaps you change `Weed.java` or you handcraft inputs and include them into `experiments.py`.
+-+
+-+We will use the first exercise slot to help you setting up the tool chain on your machine.
+-diff --git a/Tables-APALGtraining-cce3eed/WeedJavaDict.table b/Tables-APALGtraining-cce3eed/WeedJavaDict.table
+-index d8892dc..3c32f43 100644
+---- a/Tables-APALGtraining-cce3eed/WeedJavaDict.table
+-+++ b/Tables-APALGtraining-cce3eed/WeedJavaDict.table
+-@@ -1,23 +1,23 @@
+--  30 0.100 0.004
+--  42 0.099 0.010
+--  59 0.093 0.004
+--  84 0.096 0.001
+-- 118 0.104 0.006
+-- 167 0.104 0.004
+-- 235 0.105 0.005
+-- 332 0.113 0.007
+-- 468 0.121 0.012
+-- 660 0.125 0.003
+-- 931 0.128 0.003
+--1313 0.146 0.008
+--1852 0.162 0.012
+--2611 0.224 0.026
+--3682 0.334 0.020
+--5192 0.550 0.014
+--7321 0.815 0.008
+--10323 1.629 0.027
+--14556 2.844 0.210
+--20525 6.741 0.053
+--28940 11.542 0.036
+--40805 25.387 2.086
+--57536 43.701 3.118
+-+  30 0.100 0.004
+-+  42 0.099 0.010
+-+  59 0.093 0.004
+-+  84 0.096 0.001
+-+ 118 0.104 0.006
+-+ 167 0.104 0.004
+-+ 235 0.105 0.005
+-+ 332 0.113 0.007
+-+ 468 0.121 0.012
+-+ 660 0.125 0.003
+-+ 931 0.128 0.003
+-+1313 0.146 0.008
+-+1852 0.162 0.012
+-+2611 0.224 0.026
+-+3682 0.334 0.020
+-+5192 0.550 0.014
+-+7321 0.815 0.008
+-+10323 1.629 0.027
+-+14556 2.844 0.210
+-+20525 6.741 0.053
+-+28940 11.542 0.036
+-+40805 25.387 2.086
+-+57536 43.701 3.118
+-diff --git a/Tables-APALGtraining-cce3eed/WeedJavaSimple.table b/Tables-APALGtraining-cce3eed/WeedJavaSimple.table
+-index 4193590..40a9a2b 100644
+---- a/Tables-APALGtraining-cce3eed/WeedJavaSimple.table
+-+++ b/Tables-APALGtraining-cce3eed/WeedJavaSimple.table
+-@@ -1,17 +1,17 @@
+--  30 0.095 0.005
+--  42 0.096 0.005
+--  59 0.095 0.003
+--  84 0.103 0.007
+-- 118 0.110 0.007
+-- 167 0.108 0.006
+-- 235 0.107 0.007
+-- 332 0.115 0.008
+-- 468 0.123 0.005
+-- 660 0.151 0.003
+-- 931 0.228 0.005
+--1313 0.421 0.017
+--1852 0.935 0.010
+--2611 2.369 0.008
+--3682 6.388 0.087
+--5192 17.618 0.258
+--7321 48.755 0.075
+-+  30 0.095 0.005
+-+  42 0.096 0.005
+-+  59 0.095 0.003
+-+  84 0.103 0.007
+-+ 118 0.110 0.007
+-+ 167 0.108 0.006
+-+ 235 0.107 0.007
+-+ 332 0.115 0.008
+-+ 468 0.123 0.005
+-+ 660 0.151 0.003
+-+ 931 0.228 0.005
+-+1313 0.421 0.017
+-+1852 0.935 0.010
+-+2611 2.369 0.008
+-+3682 6.388 0.087
+-+5192 17.618 0.258
+-+7321 48.755 0.075
+-diff --git a/Tables-APALGtraining-cce3eed/WeedPythDict.table b/Tables-APALGtraining-cce3eed/WeedPythDict.table
+-index 6383698..4cd1a9e 100644
+---- a/Tables-APALGtraining-cce3eed/WeedPythDict.table
+-+++ b/Tables-APALGtraining-cce3eed/WeedPythDict.table
+-@@ -1,19 +1,19 @@
+--  30 0.071 0.001
+--  42 0.070 0.000
+--  59 0.072 0.001
+--  84 0.073 0.001
+-- 118 0.078 0.005
+-- 167 0.083 0.006
+-- 235 0.091 0.005
+-- 332 0.100 0.006
+-- 468 0.122 0.007
+-- 660 0.160 0.007
+-- 931 0.230 0.007
+--1313 0.373 0.011
+--1852 0.633 0.010
+--2611 1.190 0.008
+--3682 2.241 0.008
+--5192 4.423 0.022
+--7321 8.688 0.048
+--10323 17.498 0.062
+--14556 34.492 0.294
+-+  30 0.071 0.001
+-+  42 0.070 0.000
+-+  59 0.072 0.001
+-+  84 0.073 0.001
+-+ 118 0.078 0.005
+-+ 167 0.083 0.006
+-+ 235 0.091 0.005
+-+ 332 0.100 0.006
+-+ 468 0.122 0.007
+-+ 660 0.160 0.007
+-+ 931 0.230 0.007
+-+1313 0.373 0.011
+-+1852 0.633 0.010
+-+2611 1.190 0.008
+-+3682 2.241 0.008
+-+5192 4.423 0.022
+-+7321 8.688 0.048
+-+10323 17.498 0.062
+-+14556 34.492 0.294
+-diff --git a/Tables-APALGtraining-cce3eed/WeedPythSimple.table b/Tables-APALGtraining-cce3eed/WeedPythSimple.table
+-index 23808b8..45576ef 100644
+---- a/Tables-APALGtraining-cce3eed/WeedPythSimple.table
+-+++ b/Tables-APALGtraining-cce3eed/WeedPythSimple.table
+-@@ -1,11 +1,11 @@
+--  30 0.074 0.004
+--  42 0.073 0.001
+--  59 0.083 0.005
+--  84 0.101 0.002
+-- 118 0.154 0.006
+-- 167 0.302 0.009
+-- 235 0.694 0.021
+-- 332 1.907 0.169
+-- 468 4.988 0.063
+-- 660 14.011 0.370
+-- 931 39.138 1.198
+-+  30 0.074 0.004
+-+  42 0.073 0.001
+-+  59 0.083 0.005
+-+  84 0.101 0.002
+-+ 118 0.154 0.006
+-+ 167 0.302 0.009
+-+ 235 0.694 0.021
+-+ 332 1.907 0.169
+-+ 468 4.988 0.063
+-+ 660 14.011 0.370
+-+ 931 39.138 1.198
+-diff --git a/Tables-APALGtraining-cce3eed/gitst.txt b/Tables-APALGtraining-cce3eed/gitst.txt
+-index b12bd36..24fc9ef 100644
+---- a/Tables-APALGtraining-cce3eed/gitst.txt
+-+++ b/Tables-APALGtraining-cce3eed/gitst.txt
+-@@ -1,6 +1,6 @@
+--?? Tables-APALGtraining-851bf65/
+--?? Tables-APALGtraining-cce3eed/
+--?? Tables851bf65-01/
+--?? Tables851bf65-02/
+--?? Tables851bf65-03/
+--?? Tables851bf65-APALGtraining-01/
+-+?? Tables-APALGtraining-851bf65/
+-+?? Tables-APALGtraining-cce3eed/
+-+?? Tables851bf65-01/
+-+?? Tables851bf65-02/
+-+?? Tables851bf65-03/
+-+?? Tables851bf65-APALGtraining-01/
+-diff --git a/Tables-APALGtraining-cce3eed/versions.txt b/Tables-APALGtraining-cce3eed/versions.txt
+-index 3dc8ad5..eefea37 100644
+---- a/Tables-APALGtraining-cce3eed/versions.txt
+-+++ b/Tables-APALGtraining-cce3eed/versions.txt
+-@@ -1 +1 @@
+--Python 3.5.2
+-+Python 3.5.2
+-diff --git a/Tables-rjx260-cce3eed/WeedJavaDict.table b/Tables-rjx260-cce3eed/WeedJavaDict.table
+-index ef46942..b5d95d7 100644
+---- a/Tables-rjx260-cce3eed/WeedJavaDict.table
+-+++ b/Tables-rjx260-cce3eed/WeedJavaDict.table
+-@@ -1,23 +1,23 @@
+--  30 0.165 0.084
+--  42 0.190 0.097
+--  59 0.162 0.094
+--  84 0.206 0.162
+-- 118 0.224 0.078
+-- 167 0.199 0.051
+-- 235 0.180 0.093
+-- 332 0.222 0.137
+-- 468 0.258 0.158
+-- 660 0.291 0.219
+-- 931 0.271 0.204
+--1313 0.477 0.427
+--1852 0.401 0.243
+--2611 0.582 0.364
+--3682 0.812 0.509
+--5192 0.928 0.547
+--7321 1.238 0.718
+--10323 1.707 0.163
+--14556 2.846 0.181
+--20525 9.567 3.427
+--28940 17.058 9.801
+--40805 27.178 2.105
+--57536 59.606 16.182
+-+  30 0.165 0.084
+-+  42 0.190 0.097
+-+  59 0.162 0.094
+-+  84 0.206 0.162
+-+ 118 0.224 0.078
+-+ 167 0.199 0.051
+-+ 235 0.180 0.093
+-+ 332 0.222 0.137
+-+ 468 0.258 0.158
+-+ 660 0.291 0.219
+-+ 931 0.271 0.204
+-+1313 0.477 0.427
+-+1852 0.401 0.243
+-+2611 0.582 0.364
+-+3682 0.812 0.509
+-+5192 0.928 0.547
+-+7321 1.238 0.718
+-+10323 1.707 0.163
+-+14556 2.846 0.181
+-+20525 9.567 3.427
+-+28940 17.058 9.801
+-+40805 27.178 2.105
+-+57536 59.606 16.182
+-diff --git a/Tables-rjx260-cce3eed/WeedJavaSimple.table b/Tables-rjx260-cce3eed/WeedJavaSimple.table
+-index 6bf7342..48640e8 100644
+---- a/Tables-rjx260-cce3eed/WeedJavaSimple.table
+-+++ b/Tables-rjx260-cce3eed/WeedJavaSimple.table
+-@@ -1,17 +1,17 @@
+--  30 0.098 0.010
+--  42 0.108 0.024
+--  59 0.100 0.010
+--  84 0.109 0.012
+-- 118 0.146 0.030
+-- 167 0.156 0.027
+-- 235 0.169 0.047
+-- 332 0.126 0.010
+-- 468 0.154 0.018
+-- 660 0.171 0.012
+-- 931 0.257 0.020
+--1313 0.444 0.021
+--1852 0.907 0.090
+--2611 1.802 0.033
+--3682 4.677 0.089
+--5192 12.363 0.558
+--7321 34.498 0.189
+-+  30 0.098 0.010
+-+  42 0.108 0.024
+-+  59 0.100 0.010
+-+  84 0.109 0.012
+-+ 118 0.146 0.030
+-+ 167 0.156 0.027
+-+ 235 0.169 0.047
+-+ 332 0.126 0.010
+-+ 468 0.154 0.018
+-+ 660 0.171 0.012
+-+ 931 0.257 0.020
+-+1313 0.444 0.021
+-+1852 0.907 0.090
+-+2611 1.802 0.033
+-+3682 4.677 0.089
+-+5192 12.363 0.558
+-+7321 34.498 0.189
+-diff --git a/Tables-rjx260-cce3eed/WeedPythDict.table b/Tables-rjx260-cce3eed/WeedPythDict.table
+-index 577fc08..ec90ee7 100644
+---- a/Tables-rjx260-cce3eed/WeedPythDict.table
+-+++ b/Tables-rjx260-cce3eed/WeedPythDict.table
+-@@ -1,20 +1,20 @@
+--  30 0.086 0.057
+--  42 0.083 0.047
+--  59 0.081 0.036
+--  84 0.087 0.048
+-- 118 0.105 0.043
+-- 167 0.113 0.047
+-- 235 0.093 0.022
+-- 332 0.130 0.040
+-- 468 0.110 0.023
+-- 660 0.165 0.040
+-- 931 0.248 0.080
+--1313 0.354 0.092
+--1852 0.531 0.051
+--2611 0.905 0.078
+--3682 1.690 0.102
+--5192 3.442 0.169
+--7321 6.628 0.267
+--10323 12.984 0.446
+--14556 25.967 0.719
+--20525 53.251 1.440
+-+  30 0.086 0.057
+-+  42 0.083 0.047
+-+  59 0.081 0.036
+-+  84 0.087 0.048
+-+ 118 0.105 0.043
+-+ 167 0.113 0.047
+-+ 235 0.093 0.022
+-+ 332 0.130 0.040
+-+ 468 0.110 0.023
+-+ 660 0.165 0.040
+-+ 931 0.248 0.080
+-+1313 0.354 0.092
+-+1852 0.531 0.051
+-+2611 0.905 0.078
+-+3682 1.690 0.102
+-+5192 3.442 0.169
+-+7321 6.628 0.267
+-+10323 12.984 0.446
+-+14556 25.967 0.719
+-+20525 53.251 1.440
+-diff --git a/Tables-rjx260-cce3eed/WeedPythSimple.table b/Tables-rjx260-cce3eed/WeedPythSimple.table
+-index c822ea9..87ef9b7 100644
+---- a/Tables-rjx260-cce3eed/WeedPythSimple.table
+-+++ b/Tables-rjx260-cce3eed/WeedPythSimple.table
+-@@ -1,12 +1,12 @@
+--  30 0.154 0.156
+--  42 0.090 0.042
+--  59 0.095 0.046
+--  84 0.108 0.043
+-- 118 0.166 0.016
+-- 167 0.297 0.088
+-- 235 0.540 0.024
+-- 332 1.453 0.055
+-- 468 4.003 0.097
+-- 660 10.639 0.249
+-- 931 31.406 2.656
+--1313 86.087 1.449
+-+  30 0.154 0.156
+-+  42 0.090 0.042
+-+  59 0.095 0.046
+-+  84 0.108 0.043
+-+ 118 0.166 0.016
+-+ 167 0.297 0.088
+-+ 235 0.540 0.024
+-+ 332 1.453 0.055
+-+ 468 4.003 0.097
+-+ 660 10.639 0.249
+-+ 931 31.406 2.656
+-+1313 86.087 1.449
+-diff --git a/Tables-rjx260-cce3eed/gitst.txt b/Tables-rjx260-cce3eed/gitst.txt
+-index 101a66c..d666b12 100644
+---- a/Tables-rjx260-cce3eed/gitst.txt
+-+++ b/Tables-rjx260-cce3eed/gitst.txt
+-@@ -1,6 +1,6 @@
+--?? Tables-rjx260-cce3eed/
+--?? Tables629d632-01/
+--?? Tables629d632-02/
+--?? Tables629d632/
+--?? Tables7725b11/
+--?? Tablesrjx260-729f950/
+-+?? Tables-rjx260-cce3eed/
+-+?? Tables629d632-01/
+-+?? Tables629d632-02/
+-+?? Tables629d632/
+-+?? Tables7725b11/
+-+?? Tablesrjx260-729f950/
+-diff --git a/Tables-rjx260-cce3eed/versions.txt b/Tables-rjx260-cce3eed/versions.txt
+-index f80a7db..900d411 100644
+---- a/Tables-rjx260-cce3eed/versions.txt
+-+++ b/Tables-rjx260-cce3eed/versions.txt
+-@@ -1,2 +1,2 @@
+--Python 3.6.9
+--javac 11.0.8
+-+Python 3.6.9
+-+javac 11.0.8
+-diff --git a/Tables1/WeedJavaDict.table b/Tables1/WeedJavaDict.table
+-index fcefa76..15c2bb0 100644
+---- a/Tables1/WeedJavaDict.table
+-+++ b/Tables1/WeedJavaDict.table
+-@@ -1,19 +1,19 @@
+--  30 0.097 0.009
+--  42 0.098 0.005
+--  59 0.100 0.007
+--  84 0.100 0.004
+-- 118 0.116 0.009
+-- 167 0.117 0.006
+-- 235 0.124 0.006
+-- 332 0.121 0.006
+-- 468 0.155 0.028
+-- 660 0.132 0.006
+-- 931 0.155 0.004
+--1313 0.181 0.013
+--1852 0.213 0.024
+--2611 0.247 0.026
+--3682 0.435 0.045
+--5192 0.623 0.088
+--7321 0.809 0.098
+--10323 0.868 0.428
+--14556 2.119 0.506
+-+  30 0.097 0.009
+-+  42 0.098 0.005
+-+  59 0.100 0.007
+-+  84 0.100 0.004
+-+ 118 0.116 0.009
+-+ 167 0.117 0.006
+-+ 235 0.124 0.006
+-+ 332 0.121 0.006
+-+ 468 0.155 0.028
+-+ 660 0.132 0.006
+-+ 931 0.155 0.004
+-+1313 0.181 0.013
+-+1852 0.213 0.024
+-+2611 0.247 0.026
+-+3682 0.435 0.045
+-+5192 0.623 0.088
+-+7321 0.809 0.098
+-+10323 0.868 0.428
+-+14556 2.119 0.506
+-diff --git a/Tables1/WeedJavaSimple.table b/Tables1/WeedJavaSimple.table
+-index c5036c0..03f0d74 100644
+---- a/Tables1/WeedJavaSimple.table
+-+++ b/Tables1/WeedJavaSimple.table
+-@@ -1,16 +1,16 @@
+--  30 0.115 0.020
+--  42 0.125 0.035
+--  59 0.136 0.038
+--  84 0.142 0.032
+-- 118 0.169 0.029
+-- 167 0.208 0.034
+-- 235 0.173 0.019
+-- 332 0.196 0.030
+-- 468 0.200 0.043
+-- 660 0.238 0.047
+-- 931 0.288 0.019
+--1313 0.396 0.117
+--1852 0.563 0.230
+--2611 1.159 0.286
+--3682 4.907 0.179
+--5192 3.318 0.000
+-+  30 0.115 0.020
+-+  42 0.125 0.035
+-+  59 0.136 0.038
+-+  84 0.142 0.032
+-+ 118 0.169 0.029
+-+ 167 0.208 0.034
+-+ 235 0.173 0.019
+-+ 332 0.196 0.030
+-+ 468 0.200 0.043
+-+ 660 0.238 0.047
+-+ 931 0.288 0.019
+-+1313 0.396 0.117
+-+1852 0.563 0.230
+-+2611 1.159 0.286
+-+3682 4.907 0.179
+-+5192 3.318 0.000
+-diff --git a/Tables1/WeedPythDict.table b/Tables1/WeedPythDict.table
+-index 5c2a1b5..5ab8f63 100644
+---- a/Tables1/WeedPythDict.table
+-+++ b/Tables1/WeedPythDict.table
+-@@ -1,19 +1,19 @@
+--  30 0.058 0.003
+--  42 0.064 0.008
+--  59 0.063 0.006
+--  84 0.065 0.005
+-- 118 0.083 0.020
+-- 167 0.093 0.043
+-- 235 0.086 0.018
+-- 332 0.108 0.034
+-- 468 0.109 0.007
+-- 660 0.121 0.038
+-- 931 0.192 0.027
+--1313 0.242 0.090
+--1852 0.154 0.022
+--2611 0.270 0.129
+--3682 1.537 0.321
+--5192 2.553 1.594
+--7321 4.922 2.854
+--10323 2.711 2.436
+--14556 3.329 1.685
+-+  30 0.058 0.003
+-+  42 0.064 0.008
+-+  59 0.063 0.006
+-+  84 0.065 0.005
+-+ 118 0.083 0.020
+-+ 167 0.093 0.043
+-+ 235 0.086 0.018
+-+ 332 0.108 0.034
+-+ 468 0.109 0.007
+-+ 660 0.121 0.038
+-+ 931 0.192 0.027
+-+1313 0.242 0.090
+-+1852 0.154 0.022
+-+2611 0.270 0.129
+-+3682 1.537 0.321
+-+5192 2.553 1.594
+-+7321 4.922 2.854
+-+10323 2.711 2.436
+-+14556 3.329 1.685
+-diff --git a/Tables1/WeedPythSimple.table b/Tables1/WeedPythSimple.table
+-index 22d151c..b410d8b 100644
+---- a/Tables1/WeedPythSimple.table
+-+++ b/Tables1/WeedPythSimple.table
+-@@ -1,10 +1,10 @@
+--  30 0.101 0.071
+--  42 0.096 0.062
+--  59 0.078 0.009
+--  84 0.090 0.008
+-- 118 0.136 0.023
+-- 167 0.135 0.069
+-- 235 0.549 0.108
+-- 332 1.115 0.302
+-- 468 3.329 1.730
+-- 660 3.998 1.164
+-+  30 0.101 0.071
+-+  42 0.096 0.062
+-+  59 0.078 0.009
+-+  84 0.090 0.008
+-+ 118 0.136 0.023
+-+ 167 0.135 0.069
+-+ 235 0.549 0.108
+-+ 332 1.115 0.302
+-+ 468 3.329 1.730
+-+ 660 3.998 1.164
+-diff --git a/Tables56c1cb7/WeedJavaDict.table b/Tables56c1cb7/WeedJavaDict.table
+-index 062193b..ef68697 100644
+---- a/Tables56c1cb7/WeedJavaDict.table
+-+++ b/Tables56c1cb7/WeedJavaDict.table
+-@@ -1,23 +1,23 @@
+--  30 0.099 0.008
+--  42 0.097 0.007
+--  59 0.101 0.009
+--  84 0.106 0.011
+-- 118 0.115 0.012
+-- 167 0.118 0.005
+-- 235 0.119 0.010
+-- 332 0.168 0.042
+-- 468 0.164 0.026
+-- 660 0.154 0.009
+-- 931 0.164 0.014
+--1313 0.211 0.030
+--1852 0.241 0.038
+--2611 0.287 0.015
+--3682 0.426 0.033
+--5192 0.646 0.033
+--7321 0.844 0.049
+--10323 1.699 0.051
+--14556 2.859 0.319
+--20525 6.030 0.105
+--28940 10.695 0.618
+--40805 26.463 1.058
+--57536 47.010 3.871
+-+  30 0.099 0.008
+-+  42 0.097 0.007
+-+  59 0.101 0.009
+-+  84 0.106 0.011
+-+ 118 0.115 0.012
+-+ 167 0.118 0.005
+-+ 235 0.119 0.010
+-+ 332 0.168 0.042
+-+ 468 0.164 0.026
+-+ 660 0.154 0.009
+-+ 931 0.164 0.014
+-+1313 0.211 0.030
+-+1852 0.241 0.038
+-+2611 0.287 0.015
+-+3682 0.426 0.033
+-+5192 0.646 0.033
+-+7321 0.844 0.049
+-+10323 1.699 0.051
+-+14556 2.859 0.319
+-+20525 6.030 0.105
+-+28940 10.695 0.618
+-+40805 26.463 1.058
+-+57536 47.010 3.871
+-diff --git a/Tables56c1cb7/WeedJavaSimple.table b/Tables56c1cb7/WeedJavaSimple.table
+-index 176ef84..cda2a37 100644
+---- a/Tables56c1cb7/WeedJavaSimple.table
+-+++ b/Tables56c1cb7/WeedJavaSimple.table
+-@@ -1,17 +1,17 @@
+--  30 0.100 0.009
+--  42 0.124 0.040
+--  59 0.119 0.036
+--  84 0.128 0.014
+-- 118 0.135 0.016
+-- 167 0.153 0.025
+-- 235 0.165 0.044
+-- 332 0.197 0.073
+-- 468 0.179 0.036
+-- 660 0.207 0.021
+-- 931 0.287 0.028
+--1313 0.494 0.049
+--1852 0.977 0.017
+--2611 1.821 0.037
+--3682 4.745 0.004
+--5192 12.935 0.209
+--7321 35.862 1.411
+-+  30 0.100 0.009
+-+  42 0.124 0.040
+-+  59 0.119 0.036
+-+  84 0.128 0.014
+-+ 118 0.135 0.016
+-+ 167 0.153 0.025
+-+ 235 0.165 0.044
+-+ 332 0.197 0.073
+-+ 468 0.179 0.036
+-+ 660 0.207 0.021
+-+ 931 0.287 0.028
+-+1313 0.494 0.049
+-+1852 0.977 0.017
+-+2611 1.821 0.037
+-+3682 4.745 0.004
+-+5192 12.935 0.209
+-+7321 35.862 1.411
+-diff --git a/Tables56c1cb7/WeedPythDict.table b/Tables56c1cb7/WeedPythDict.table
+-index 609479c..1c07e93 100644
+---- a/Tables56c1cb7/WeedPythDict.table
+-+++ b/Tables56c1cb7/WeedPythDict.table
+-@@ -1,20 +1,20 @@
+--  30 0.062 0.002
+--  42 0.060 0.007
+--  59 0.060 0.003
+--  84 0.061 0.004
+-- 118 0.077 0.009
+-- 167 0.096 0.033
+-- 235 0.100 0.025
+-- 332 0.103 0.023
+-- 468 0.134 0.036
+-- 660 0.176 0.099
+-- 931 0.196 0.028
+--1313 0.326 0.049
+--1852 0.504 0.027
+--2611 0.975 0.104
+--3682 1.682 0.020
+--5192 3.289 0.066
+--7321 6.556 0.182
+--10323 13.075 0.062
+--14556 25.633 0.483
+--20525 53.282 0.679
+-+  30 0.062 0.002
+-+  42 0.060 0.007
+-+  59 0.060 0.003
+-+  84 0.061 0.004
+-+ 118 0.077 0.009
+-+ 167 0.096 0.033
+-+ 235 0.100 0.025
+-+ 332 0.103 0.023
+-+ 468 0.134 0.036
+-+ 660 0.176 0.099
+-+ 931 0.196 0.028
+-+1313 0.326 0.049
+-+1852 0.504 0.027
+-+2611 0.975 0.104
+-+3682 1.682 0.020
+-+5192 3.289 0.066
+-+7321 6.556 0.182
+-+10323 13.075 0.062
+-+14556 25.633 0.483
+-+20525 53.282 0.679
+-diff --git a/Tables56c1cb7/WeedPythSimple.table b/Tables56c1cb7/WeedPythSimple.table
+-index a3f1c5d..a26b5ad 100644
+---- a/Tables56c1cb7/WeedPythSimple.table
+-+++ b/Tables56c1cb7/WeedPythSimple.table
+-@@ -1,12 +1,12 @@
+--  30 0.065 0.004
+--  42 0.069 0.015
+--  59 0.076 0.014
+--  84 0.106 0.031
+-- 118 0.181 0.040
+-- 167 0.247 0.013
+-- 235 0.563 0.029
+-- 332 1.873 0.604
+-- 468 4.454 0.320
+-- 660 11.767 0.936
+-- 931 33.581 3.052
+--1313 87.846 0.621
+-+  30 0.065 0.004
+-+  42 0.069 0.015
+-+  59 0.076 0.014
+-+  84 0.106 0.031
+-+ 118 0.181 0.040
+-+ 167 0.247 0.013
+-+ 235 0.563 0.029
+-+ 332 1.873 0.604
+-+ 468 4.454 0.320
+-+ 660 11.767 0.936
+-+ 931 33.581 3.052
+-+1313 87.846 0.621
+-diff --git a/Tables56c1cb7/gitst.txt b/Tables56c1cb7/gitst.txt
+-index 13e5dca..8934e71 100644
+---- a/Tables56c1cb7/gitst.txt
+-+++ b/Tables56c1cb7/gitst.txt
+-@@ -1,2 +1,2 @@
+--?? Tables56c1cb7/
+--?? patch.diff
+-+?? Tables56c1cb7/
+-+?? patch.diff
+-diff --git a/Weed.java b/Weed.java
+-index 98e1e5a..e97f937 100644
+---- a/Weed.java
+-+++ b/Weed.java
+-@@ -1,44 +1,44 @@
+--import java.util.Random;
+--import java.util.ArrayList;
+--import java.util.List;
+--import java.util.Collections;
+--
+--public class Weed
+--{
+--
+--	public static long mynextLong(Random R) {
+--		return R.nextLong() / 4;
+--	}
+--    public static void main(final String[] args) {
+--		final int N = Integer.parseInt(args[0]);
+--		final List<Long> vals = new ArrayList<>();
+--
+--		final Random R = new Random(Integer.parseInt(args[1]));
+--		if(args.length > 1){
+--			R.setSeed(Long.parseLong(args[1]) + N);			
+--		} 
+--
+--		vals.add(mynextLong(R));
+--		vals.add(mynextLong(R));
+--		// vals.add(-(vals.get(0) + vals.get(1) ));
+--		vals.add(mynextLong(R));
+--		// if ( R.nextBoolean())  vals.set(2,vals.get(2)+1);
+--		for (int i = 3; i<N; ++i)
+--				vals.add(mynextLong(R));
+--		
+--		Collections.shuffle(vals,R);
+--
+--		System.out.println(N);
+--		for (int i = 0; i<N; ++i) System.out.println(vals.get(i));
+--
+--//	for (int i = 0; i<N; ++i)
+--//	    for (int j = i+1; j<N; ++j)
+--//		for (int k = j+1; k<N; ++k)
+--//		    for (int l = k+1; l<N; ++l)
+--//			if (vals.get(i) + vals.get(j) + vals.get(k) + vals.get(l) == 0) 
+--//			{
+--//			 System.out.println(i+" "+j+" "+k+" "+l);
+--//			 //System.exit(0);
+--//			}
+--    }
+--}
+-+import java.util.Random;
+-+import java.util.ArrayList;
+-+import java.util.List;
+-+import java.util.Collections;
+-+
+-+public class Weed
+-+{
+-+
+-+	public static long mynextLong(Random R) {
+-+		return R.nextLong() / 4;
+-+	}
+-+    public static void main(final String[] args) {
+-+		final int N = Integer.parseInt(args[0]);
+-+		final List<Long> vals = new ArrayList<>();
+-+
+-+		final Random R = new Random(Integer.parseInt(args[1]));
+-+		if(args.length > 1){
+-+			R.setSeed(Long.parseLong(args[1]) + N);			
+-+		} 
+-+
+-+		vals.add(mynextLong(R));
+-+		vals.add(mynextLong(R));
+-+		// vals.add(-(vals.get(0) + vals.get(1) ));
+-+		vals.add(mynextLong(R));
+-+		// if ( R.nextBoolean())  vals.set(2,vals.get(2)+1);
+-+		for (int i = 3; i<N; ++i)
+-+				vals.add(mynextLong(R));
+-+		
+-+		Collections.shuffle(vals,R);
+-+
+-+		System.out.println(N);
+-+		for (int i = 0; i<N; ++i) System.out.println(vals.get(i));
+-+
+-+//	for (int i = 0; i<N; ++i)
+-+//	    for (int j = i+1; j<N; ++j)
+-+//		for (int k = j+1; k<N; ++k)
+-+//		    for (int l = k+1; l<N; ++l)
+-+//			if (vals.get(i) + vals.get(j) + vals.get(k) + vals.get(l) == 0) 
+-+//			{
+-+//			 System.out.println(i+" "+j+" "+k+" "+l);
+-+//			 //System.exit(0);
+-+//			}
+-+    }
+-+}
+-diff --git a/allexps.py b/allexps.py
+-index 582463d..da8670a 100644
+---- a/allexps.py
+-+++ b/allexps.py
+-@@ -1,32 +1,32 @@
+--from APAexp import Process,JavaProcess,PythonProcess, runExp, prepareTableDir
+--
+--stressP = [ JavaProcess("Produce.java",parameters=["plant"],nickname='PrdPt'),
+--            JavaProcess("Produce.java",parameters=["no"],nickname='PrdNo')]
+--testlist = [
+--    JavaProcess("javaSol/Simple.java",    nickname='JavaSimple'),
+--    JavaProcess("javaSol/HashPairs.java", nickname='JavaDict'),
+--    PythonProcess('pythonSol/simple.py',  nickname='PythSimple'),
+--    PythonProcess('pythonSol/fastDict.py',nickname='PythDict')
+--]
+--
+--TableDir = prepareTableDir()
+--
+--# stresstest, aiming at correctness
+--stressListN = [10,50] 
+--for seed in [5679]: # runExp does 3 runs with modified seed, add more seeds here if needed
+--    for prodProc in stressP:
+--        resDict = dict()
+--        for testProc in testlist:
+--            print(seed,prodProc.nickname,testProc.nickname)
+--            runExp(prodProc,testProc,TableDir,results=resDict, 
+--                    Nlist=stressListN,seed=seed)
+--
+--# now the performance tests
+--Nlist = [int(90*1.41**i) for i in range(2)]
+--print("-"*80)
+--print(Nlist)
+--timelimit = 10     # in seconds; if we exceed this, we don't try anything bigger
+--hardtimelimit = 100 # then the OS is going to kill it -- protection agains infinite loops and alike
+--weed=JavaProcess('Weed.java') ## supplying only 
+--for pp in testlist:
+--    runExp(weed,pp,TableDir, Nlist=Nlist,seed=12345,timelimit = timelimit,hardtimelimit=hardtimelimit)
+-+from APAexp import Process,JavaProcess,PythonProcess, runExp, prepareTableDir
+-+
+-+stressP = [ JavaProcess("Produce.java",parameters=["plant"],nickname='PrdPt'),
+-+            JavaProcess("Produce.java",parameters=["no"],nickname='PrdNo')]
+-+testlist = [
+-+    JavaProcess("javaSol/Simple.java",    nickname='JavaSimple'),
+-+    JavaProcess("javaSol/HashPairs.java", nickname='JavaDict'),
+-+    PythonProcess('pythonSol/simple.py',  nickname='PythSimple'),
+-+    PythonProcess('pythonSol/fastDict.py',nickname='PythDict')
+-+]
+-+
+-+TableDir = prepareTableDir()
+-+
+-+# stresstest, aiming at correctness
+-+stressListN = [10,50] 
+-+for seed in [5679]: # runExp does 3 runs with modified seed, add more seeds here if needed
+-+    for prodProc in stressP:
+-+        resDict = dict()
+-+        for testProc in testlist:
+-+            print(seed,prodProc.nickname,testProc.nickname)
+-+            runExp(prodProc,testProc,TableDir,results=resDict, 
+-+                    Nlist=stressListN,seed=seed)
+-+
+-+# now the performance tests
+-+Nlist = [int(90*1.41**i) for i in range(2)]
+-+print("-"*80)
+-+print(Nlist)
+-+timelimit = 10     # in seconds; if we exceed this, we don't try anything bigger
+-+hardtimelimit = 100 # then the OS is going to kill it -- protection agains infinite loops and alike
+-+weed=JavaProcess('Weed.java') ## supplying only 
+-+for pp in testlist:
+-+    runExp(weed,pp,TableDir, Nlist=Nlist,seed=12345,timelimit = timelimit,hardtimelimit=hardtimelimit)
+-diff --git a/experiment.py b/experiment.py
+-index 5f65484..e70fff5 100644
+---- a/experiment.py
+-+++ b/experiment.py
+-@@ -1,101 +1,101 @@
+--# this is python3
+--import sys,random,subprocess,statistics,pathlib,platform
+--from timeit import default_timer as timer
+--
+--
+--python='python3'
+--java="java"
+--javac="javac"
+--
+--Nlist = [int(30*1.41**i) for i in range(29)]
+--print(Nlist)
+--
+--timelimit = 30      # in seconds; if we exceed this, we don't try anything bigger
+--hardtimelimit = 100 # then the OS is going to kill it -- protection agains infinite loops and alike
+--
+--githash = subprocess.check_output(["git","rev-parse","--short","HEAD"]).decode("utf-8")[:-1]
+--nodename = platform.node()
+--
+--TableDir="./Tables-{}-{}".format(nodename,githash)
+--i=1
+--while pathlib.Path(TableDir).exists():
+--    TableDir="./Tables{}-{}-{:02}".format(githash,nodename,i)
+--    i += 1
+--testdir = pathlib.Path(TableDir)
+--testdir.mkdir() # force it to be empty - parents=True, exist_ok=True)
+--if len(subprocess.check_output(["git","status","--porcelain"])) > 0:
+--    subprocess.run("cd {0}; git status --porcelain > gitst.txt; git diff > patch.diff".format(TableDir),shell=True)
+--
+--subprocess.run("cd {}; ({} --version; {} -version;{} -version) > versions.txt".format(TableDir,python,javac,java),shell=True)
+--
+--with (testdir / 'platform.txt').open('w') as pf:
+--    print(platform.platform(), file=pf)
+--    print(platform.processor(), file=pf)
+--
+--subprocess.run([javac, "Weed.java"],check=True)
+--weed=(java, '-cp', '.','Weed') ## supplying only 
+--subprocess.run([javac, "javaSol/Simple.java"],check=True)
+--simpJava=(java, '-cp', 'javaSol','Simple')
+--subprocess.run([javac, "javaSol/HashPairs.java"],check=True)
+--dictJava=(java, '-cp', 'javaSol','HashPairs')
+--
+--simpPyth=(python, 'pythonSol/simple.py')
+--dictPyth=(python, 'pythonSol/fastDict.py')
+--
+--def prodExp(prod,name,seed=0):
+--    runExp(prod,simpJava,tableFile=TableDir+'/'+name+'JavaSimple.table', Nlist=Nlist,seed=seed)
+--    runExp(prod,simpPyth,tableFile=TableDir+'/'+name+'PythSimple.table', Nlist=Nlist,seed=seed)
+--    runExp(prod,dictJava,tableFile=TableDir+'/'+name+'JavaDict.table',   Nlist=Nlist,seed=seed)
+--    runExp(prod,dictPyth,tableFile=TableDir+'/'+name+'PythDict.table',   Nlist=Nlist,seed=seed)
+--
+--def _main():
+--    prodExp(weed,"Weed",seed = 12345)
+--
+--results = dict()
+--def runExp(producer,tested,tableFile='', Nlist=[100],seed = 0, results = results ):
+--    FastCmp = dict()
+--    for N in Nlist:
+--        FastCmp[N]=[]
+--    for i in range(4):
+--        myseed = seed + 7896*i
+--        extra = [ str(myseed) ] if seed > 0 else []
+--        for N in Nlist:
+--            print( tableFile, tuple( list(producer) + [str(N)] +extra) )
+--            try:
+--                start = timer()
+--                ps = subprocess.Popen(tuple( list(producer) + [str(N)] + extra), stdout=subprocess.PIPE,stderr=subprocess.DEVNULL)
+--                result = subprocess.run(tested, stdin=ps.stdout,stderr=subprocess.PIPE,stdout=subprocess.PIPE,check=True, timeout=hardtimelimit)
+--                ps.wait()
+--                end = timer()
+--            except subprocess.TimeoutExpired as e:
+--                break
+--
+--            measure = end-start
+--            FastCmp[N].append(measure)
+--            print("Time: " + str(measure)   )
+--            if seed > 0:
+--                outp = result.stdout.decode("utf-8")
+--                if (N,myseed) in results  and not results[(N,myseed)] == outp:
+--                    print("different results for N={} seed={} tested={}: is={} ({}), should be {}".format(
+--                        N,myseed,tested,outp,result.stderr.decode("utf-8"),results[(N,myseed)]))
+--                    exit(1)
+--                else:
+--                    results[(N,myseed)] = outp
+--            #        print('Output: ' + output.decode("utf-8") )
+--            if measure > timelimit:
+--                break
+--
+--    if tableFile == '':
+--        table = sys.stdout
+--    else:
+--        table = open(tableFile,'w')
+--
+--    for N in sorted(FastCmp.keys()):
+--        mm = FastCmp[N]
+--        if len(mm) > 0: ## mean and stddev are somewhat arbitrary - we'll get back to this later in the course
+--            mean = statistics.mean(mm) 
+--            stddev = statistics.stdev(mm) if len(mm) > 1 else 0 
+--            print("{:4} {:.3f} {:.3f}".format(N,mean,stddev),file=table)
+--
+--if __name__ == '__main__':
+--    _main()
+-+# this is python3
+-+import sys,random,subprocess,statistics,pathlib,platform
+-+from timeit import default_timer as timer
+-+
+-+
+-+python='python3'
+-+java="java"
+-+javac="javac"
+-+
+-+Nlist = [int(30*1.41**i) for i in range(29)]
+-+print(Nlist)
+-+
+-+timelimit = 30      # in seconds; if we exceed this, we don't try anything bigger
+-+hardtimelimit = 100 # then the OS is going to kill it -- protection agains infinite loops and alike
+-+
+-+githash = subprocess.check_output(["git","rev-parse","--short","HEAD"]).decode("utf-8")[:-1]
+-+nodename = platform.node()
+-+
+-+TableDir="./Tables-{}-{}".format(nodename,githash)
+-+i=1
+-+while pathlib.Path(TableDir).exists():
+-+    TableDir="./Tables{}-{}-{:02}".format(githash,nodename,i)
+-+    i += 1
+-+testdir = pathlib.Path(TableDir)
+-+testdir.mkdir() # force it to be empty - parents=True, exist_ok=True)
+-+if len(subprocess.check_output(["git","status","--porcelain"])) > 0:
+-+    subprocess.run("cd {0}; git status --porcelain > gitst.txt; git diff > patch.diff".format(TableDir),shell=True)
+-+
+-+subprocess.run("cd {}; ({} --version; {} -version;{} -version) > versions.txt".format(TableDir,python,javac,java),shell=True)
+-+
+-+with (testdir / 'platform.txt').open('w') as pf:
+-+    print(platform.platform(), file=pf)
+-+    print(platform.processor(), file=pf)
+-+
+-+subprocess.run([javac, "Weed.java"],check=True)
+-+weed=(java, '-cp', '.','Weed') ## supplying only 
+-+subprocess.run([javac, "javaSol/Simple.java"],check=True)
+-+simpJava=(java, '-cp', 'javaSol','Simple')
+-+subprocess.run([javac, "javaSol/HashPairs.java"],check=True)
+-+dictJava=(java, '-cp', 'javaSol','HashPairs')
+-+
+-+simpPyth=(python, 'pythonSol/simple.py')
+-+dictPyth=(python, 'pythonSol/fastDict.py')
+-+
+-+def prodExp(prod,name,seed=0):
+-+    runExp(prod,simpJava,tableFile=TableDir+'/'+name+'JavaSimple.table', Nlist=Nlist,seed=seed)
+-+    runExp(prod,simpPyth,tableFile=TableDir+'/'+name+'PythSimple.table', Nlist=Nlist,seed=seed)
+-+    runExp(prod,dictJava,tableFile=TableDir+'/'+name+'JavaDict.table',   Nlist=Nlist,seed=seed)
+-+    runExp(prod,dictPyth,tableFile=TableDir+'/'+name+'PythDict.table',   Nlist=Nlist,seed=seed)
+-+
+-+def _main():
+-+    prodExp(weed,"Weed",seed = 12345)
+-+
+-+results = dict()
+-+def runExp(producer,tested,tableFile='', Nlist=[100],seed = 0, results = results ):
+-+    FastCmp = dict()
+-+    for N in Nlist:
+-+        FastCmp[N]=[]
+-+    for i in range(4):
+-+        myseed = seed + 7896*i
+-+        extra = [ str(myseed) ] if seed > 0 else []
+-+        for N in Nlist:
+-+            print( tableFile, tuple( list(producer) + [str(N)] +extra) )
+-+            try:
+-+                start = timer()
+-+                ps = subprocess.Popen(tuple( list(producer) + [str(N)] + extra), stdout=subprocess.PIPE,stderr=subprocess.DEVNULL)
+-+                result = subprocess.run(tested, stdin=ps.stdout,stderr=subprocess.PIPE,stdout=subprocess.PIPE,check=True, timeout=hardtimelimit)
+-+                ps.wait()
+-+                end = timer()
+-+            except subprocess.TimeoutExpired as e:
+-+                break
+-+
+-+            measure = end-start
+-+            FastCmp[N].append(measure)
+-+            print("Time: " + str(measure)   )
+-+            if seed > 0:
+-+                outp = result.stdout.decode("utf-8")
+-+                if (N,myseed) in results  and not results[(N,myseed)] == outp:
+-+                    print("different results for N={} seed={} tested={}: is={} ({}), should be {}".format(
+-+                        N,myseed,tested,outp,result.stderr.decode("utf-8"),results[(N,myseed)]))
+-+                    exit(1)
+-+                else:
+-+                    results[(N,myseed)] = outp
+-+            #        print('Output: ' + output.decode("utf-8") )
+-+            if measure > timelimit:
+-+                break
+-+
+-+    if tableFile == '':
+-+        table = sys.stdout
+-+    else:
+-+        table = open(tableFile,'w')
+-+
+-+    for N in sorted(FastCmp.keys()):
+-+        mm = FastCmp[N]
+-+        if len(mm) > 0: ## mean and stddev are somewhat arbitrary - we'll get back to this later in the course
+-+            mean = statistics.mean(mm) 
+-+            stddev = statistics.stdev(mm) if len(mm) > 1 else 0 
+-+            print("{:4} {:.3f} {:.3f}".format(N,mean,stddev),file=table)
+-+
+-+if __name__ == '__main__':
+-+    _main()
+-diff --git a/javaSol/HashPairs.java b/javaSol/HashPairs.java
+-index 4b10de6..4e3cc6b 100644
+---- a/javaSol/HashPairs.java
+-+++ b/javaSol/HashPairs.java
+-@@ -1,29 +1,29 @@
+--import java.util.Scanner;
+--import java.util.HashMap;
+--
+--public class HashPairs
+--{
+--    public static void main(String[] args)
+--    {
+--        HashMap<Long,Integer>H = new HashMap<Long,Integer>();
+--
+--	Scanner S= new Scanner(System.in);
+--	int N = Integer.parseInt(S.nextLine());
+--	long[] vals = new long[N];
+--	for(int i= 0; i < N; i+= 1) {
+--        vals[i] = Long.parseLong(S.nextLine());
+--        H.put(vals[i],i);
+--    }
+--
+--        // the variables are ordered l < k < j < i; sorry
+--        for (int i = 0; i<N; ++i) 
+--            for (int j = 0; j < i; j+= 1) {// i goes through {0, ..., N-1}
+--                Integer l = H.get(-vals[i]-vals[j]);
+--                if (l != null && l<j ) {
+--                    System.out.println("Found");
+--                    System.exit(0);                    
+--                }
+--            }
+--        System.out.println("None");
+--    }
+--}
+-+import java.util.Scanner;
+-+import java.util.HashMap;
+-+
+-+public class HashPairs
+-+{
+-+    public static void main(String[] args)
+-+    {
+-+        HashMap<Long,Integer>H = new HashMap<Long,Integer>();
+-+
+-+	Scanner S= new Scanner(System.in);
+-+	int N = Integer.parseInt(S.nextLine());
+-+	long[] vals = new long[N];
+-+	for(int i= 0; i < N; i+= 1) {
+-+        vals[i] = Long.parseLong(S.nextLine());
+-+        H.put(vals[i],i);
+-+    }
+-+
+-+        // the variables are ordered l < k < j < i; sorry
+-+        for (int i = 0; i<N; ++i) 
+-+            for (int j = 0; j < i; j+= 1) {// i goes through {0, ..., N-1}
+-+                Integer l = H.get(-vals[i]-vals[j]);
+-+                if (l != null && l<j ) {
+-+                    System.out.println("Found");
+-+                    System.exit(0);                    
+-+                }
+-+            }
+-+        System.out.println("None");
+-+    }
+-+}
+-diff --git a/javaSol/Simple.java b/javaSol/Simple.java
+-index f08d6be..60d41ae 100644
+---- a/javaSol/Simple.java
+-+++ b/javaSol/Simple.java
+-@@ -1,23 +1,23 @@
+--import java.util.Scanner;
+--
+--public class Simple
+--{
+--    public static void main(String[] args)
+--    {
+--	Scanner S= new Scanner(System.in);
+--	int N = Integer.parseInt(S.nextLine());
+--	long[] vals = new long[N];
+--	for(int i= 0; i < N; i+= 1) vals[i] = Long.parseLong(S.nextLine());
+--
+--	for (int i = 0; i < N; i+= 1) // i goes through {0, ..., N-1}
+--	    for (int j = i+1; j<N; ++j)
+--			for (int k = j+1; k<N; ++k)
+--				if (vals[i] + vals[j] + vals[k] == 0) 
+--				{
+--					System.err.println(i+":"+vals[i]+" "+j+":"+vals[j]+" "+k+":"+vals[k] );
+--					System.out.println("Found");
+--					System.exit(0);
+--				}
+--        System.out.println("None");
+--    }
+--}
+-+import java.util.Scanner;
+-+
+-+public class Simple
+-+{
+-+    public static void main(String[] args)
+-+    {
+-+	Scanner S= new Scanner(System.in);
+-+	int N = Integer.parseInt(S.nextLine());
+-+	long[] vals = new long[N];
+-+	for(int i= 0; i < N; i+= 1) vals[i] = Long.parseLong(S.nextLine());
+-+
+-+	for (int i = 0; i < N; i+= 1) // i goes through {0, ..., N-1}
+-+	    for (int j = i+1; j<N; ++j)
+-+			for (int k = j+1; k<N; ++k)
+-+				if (vals[i] + vals[j] + vals[k] == 0) 
+-+				{
+-+					System.err.println(i+":"+vals[i]+" "+j+":"+vals[j]+" "+k+":"+vals[k] );
+-+					System.out.println("Found");
+-+					System.exit(0);
+-+				}
+-+        System.out.println("None");
+-+    }
+-+}
+-diff --git a/myexp.py b/myexp.py
+-index 854feac..f3d30fc 100644
+---- a/myexp.py
+-+++ b/myexp.py
+-@@ -1,21 +1,21 @@
+--from APAexp import Process,JavaProcess,PythonProcess, runExp, prepareTableDir
+--
+--Nlist = [int(90*1.41**i) for i in range(20)]
+--print(Nlist)
+--
+--timelimit = 10     # in seconds; if we exceed this, we don't try anything bigger
+--hardtimelimit = 100 # then the OS is going to kill it -- protection agains infinite loops and alike
+--
+--TableDir = prepareTableDir()
+--
+--weed=JavaProcess('Weed.java') ## supplying only 
+--
+--testlist = [
+--    JavaProcess("javaSol/Simple.java",    nickname='JavaSimple'),
+--    JavaProcess("javaSol/HashPairs.java", nickname='JavaDict'),
+--    PythonProcess('pythonSol/simple.py',  nickname='PythSimple'),
+--    PythonProcess('pythonSol/fastDict.py',nickname='PythDict')
+--]
+--for pp in testlist:
+--    runExp(weed,pp,TableDir, Nlist=Nlist,seed=12345,timelimit = timelimit,hardtimelimit=hardtimelimit)
+--
+-+from APAexp import Process,JavaProcess,PythonProcess, runExp, prepareTableDir
+-+
+-+Nlist = [int(90*1.41**i) for i in range(20)]
+-+print(Nlist)
+-+
+-+timelimit = 10     # in seconds; if we exceed this, we don't try anything bigger
+-+hardtimelimit = 100 # then the OS is going to kill it -- protection agains infinite loops and alike
+-+
+-+TableDir = prepareTableDir()
+-+
+-+weed=JavaProcess('Weed.java') ## supplying only 
+-+
+-+testlist = [
+-+    JavaProcess("javaSol/Simple.java",    nickname='JavaSimple'),
+-+    JavaProcess("javaSol/HashPairs.java", nickname='JavaDict'),
+-+    PythonProcess('pythonSol/simple.py',  nickname='PythSimple'),
+-+    PythonProcess('pythonSol/fastDict.py',nickname='PythDict')
+-+]
+-+for pp in testlist:
+-+    runExp(weed,pp,TableDir, Nlist=Nlist,seed=12345,timelimit = timelimit,hardtimelimit=hardtimelimit)
+-+
+-diff --git a/pythonSol/fastDict.py b/pythonSol/fastDict.py
+-index 2be7390..a5bbf41 100644
+---- a/pythonSol/fastDict.py
+-+++ b/pythonSol/fastDict.py
+-@@ -1,18 +1,18 @@
+--import sys
+--
+--def foursum(vals):
+--    N=len(vals)
+--    P = dict()
+--    for i in range(N):
+--        P[+vals[i]] = i
+--
+--    for j in range(N):
+--        for i in range(j):
+--            if P.get(-vals[i]-vals[j],0) > j:
+--                return True
+--    return False
+--
+--if __name__ == '__main__':
+--    N = int(sys.stdin.readline())
+--    vals = list(map(int, sys.stdin.readlines()))
+--    print("Found" if foursum(vals[:N]) else "None")
+-+import sys
+-+
+-+def foursum(vals):
+-+    N=len(vals)
+-+    P = dict()
+-+    for i in range(N):
+-+        P[+vals[i]] = i
+-+
+-+    for j in range(N):
+-+        for i in range(j):
+-+            if P.get(-vals[i]-vals[j],0) > j:
+-+                return True
+-+    return False
+-+
+-+if __name__ == '__main__':
+-+    N = int(sys.stdin.readline())
+-+    vals = list(map(int, sys.stdin.readlines()))
+-+    print("Found" if foursum(vals[:N]) else "None")
+-diff --git a/pythonSol/simple.py b/pythonSol/simple.py
+-index 8229f95..909c267 100644
+---- a/pythonSol/simple.py
+-+++ b/pythonSol/simple.py
+-@@ -1,14 +1,14 @@
+--from __future__ import print_function
+--import sys
+--
+--N = int(sys.stdin.readline())
+--vals = list(map(int, sys.stdin.readlines()))
+--
+--for i in range(0, N):
+--    for j in range(i+1, N):
+--        for k in range(j+1, N):
+--            if vals[i]+vals[j]+vals[k] == 0:
+--                print("{}:{}  {}:{}  {}:{}".format(i,vals[i],j,vals[j],k,vals[k]),file=sys.stderr)
+--                print("Found")
+--                sys.exit()
+--print("None")
+-+from __future__ import print_function
+-+import sys
+-+
+-+N = int(sys.stdin.readline())
+-+vals = list(map(int, sys.stdin.readlines()))
+-+
+-+for i in range(0, N):
+-+    for j in range(i+1, N):
+-+        for k in range(j+1, N):
+-+            if vals[i]+vals[j]+vals[k] == 0:
+-+                print("{}:{}  {}:{}  {}:{}".format(i,vals[i],j,vals[j],k,vals[k]),file=sys.stderr)
+-+                print("Found")
+-+                sys.exit()
+-+print("None")
+-diff --git a/report-threesum.tex b/report-threesum.tex
+-index fb69955..8940c8f 100644
+---- a/report-threesum.tex
+-+++ b/report-threesum.tex
+-@@ -1,99 +1,99 @@
+--\documentclass[nobib]{tufte-handout}
+--
+--\usepackage{amsmath}
+--\usepackage[utf8]{inputenc}
+--\usepackage{mathpazo}
+--\usepackage{booktabs}
+--\usepackage{microtype}
+--\usepackage{tikz}
+--\usepackage{enumitem}
+--\usepackage{pgfplots}
+--\pgfplotsset{width=9cm,compat=1.13}
+--\usepackage{pgfplotstable}
+--
+--\usepackage{listings}
+--
+--\title{Comparison of several 3-Sum algorithms}
+--\author{Riko Jacob (rikj@itu.dk)}
+--
+--\begin{document}
+--\maketitle
+--
+--\section{Compared Algorithms and Impementations}
+--
+--We compare the naive triple loop implementation and a dictionary/HashMap based implementation, in both python3 and java.
+--The algorithms are explained elsewhere.
+--
+--%\lstinputlisting{pythonSol/simple.py}
+--
+--\subsection{Experiments}
+--
+--The two algorithms are
+--\begin{itemize}
+--\item enumerating all triples in $O(n^3)$
+--\item storing the numbers in a hashtable and check all pairs in $O(n^2)$ time
+--\end{itemize}
+--
+--Both algorithms are implemented in java and python3.
+--
+--
+--\newcommand{\tableDir}{Tables-rjx260-cce3eed}
+--\newcommand{\xtableDir}{Tables-APALGtraining-cce3eed}
+--We report on an experiment executed on a Thinkpad x260 with a i7-6500U CPU, with a  nominal frequency of 2.50GHz.
+--We run serial programs, even though the CPU has 4~cores.
+--The data can be found in \tableDir.
+--The running times are determined by a python script running the testprogram as a subprocess.
+--We report mean and standard deviation from 4 runs.
+--We aim at the longest execution time being roughly 30 seconds.
+--
+--The data for the triple loop algorithm in python looks like this (column 0 is size, 1 is mean, 2 is standard deviation):
+--
+--\pgfplotstabletypeset{\tableDir /WeedJavaSimple.table}
+--
+--\begin{tikzpicture}
+--	\begin{axis}[
+--		title={Running times no triples, data in \tableDir},
+--		xlabel={$N$},
+--                xmode = log,
+--                log ticks with fixed point,
+--                ymode = log,
+--		ylabel={Time (s)},
+--		xmin=30, xmax=150000,
+--		ymin=.03, ymax=75,
+--		xtick={30,50,100,200,400, 800, 2000,5000,15000},
+--		%ytick={0,40,80,160},
+--		ytick={.05,.1,.2,.5,1,2,5,10,20},
+--                legend style={at={(1.1,0)}, anchor=south west},
+--                % legend pos=north east, %north west,
+--		%ymajorgrids=true,
+--		%grid style=dashed,
+--	]
+--        %	coordinates { (100,32)(200,37.8)(400,44.6)(800,61.8)(1600,83.8)(3200,114) };
+--	\addplot[ color=red, mark=*,error bars/.cd,y dir=both,y explicit ]	table [x index=0, y index=1, y error index=2] {\tableDir /WeedPythSimple.table};
+--        % coordinates { (100,132)(200,72.8)(400,144.6)(800,161.8)(1600,133.8)(3200,224) };
+--	\addplot[color=blue, mark=x,error bars/.cd,y dir=both,y explicit ] table [x index=0, y index=1, y error index=2] {\tableDir /WeedJavaSimple.table};
+--	\addplot[ color=brown, mark=x,error bars/.cd,y dir=both,y explicit ] table [x index=0, y index=1, y error index=2] {\tableDir /WeedPythDict.table};
+--	\addplot[ color=green, mark=o,error bars/.cd,y dir=both,y explicit ] table [x index=0, y index=1, y error index=2] {\tableDir /WeedJavaDict.table};
+--        %%%
+--%        \addplot[color=yellow] expression[domain=8:3200] {.00009*x+.08};
+--%        \addplot[color=yellow] expression[domain=8:3200] {.0009*x};
+--%        \addplot[color=yellow] expression[domain=8:3200] {.0002*x*ln(x)};
+--        \addplot[color=yellow] expression[domain=8:150000] {.000000031*x*x*x};
+--        \addplot[color=yellow] expression[domain=8:150000] {.00000000011*x*x*x};
+--%        \addplot[color=yellow] expression[domain=8:3200] {.00000000031*x*x*x*x};
+--        \addplot[color=yellow] expression[domain=8:150000] {.00000013*x*x};
+--        \addplot[color=yellow] expression[domain=8:150000] {.000000018*x*x};
+--        %
+--        %
+--	% \addplot[ color=magenta, mark=*,error bars/.cd,y dir=both,y explicit ] table [x index=0, y index=1, y error index=2] {\xtableDir /WeedPythSimple.table};
+--	% \addplot[color=cyan, mark=x,error bars/.cd,y dir=both,y explicit ] table [x index=0, y index=1, y error index=2] {\xtableDir /WeedJavaSimple.table};
+--	% \addplot[ color=lime, mark=x,error bars/.cd,y dir=both,y explicit ] table [x index=0, y index=1, y error index=2] {\xtableDir /WeedPythDict.table};
+--	% \addplot[ color=orange, mark=o,error bars/.cd,y dir=both,y explicit ] table [x index=0, y index=1, y error index=2] {\xtableDir /WeedJavaDict.table};
+--	\legend{Python, Java, Fast Python, Fast Java, $x^2$, $x^3$}
+--	\end{axis}
+--\end{tikzpicture}
+--
+--The yellow helper-lines indicate that the running times are indeed cubic and quadratic.
+--Based on these lines we conclude that for the triple loop, java is roughly 280 times faster,
+--and for the hash based version it is roughly 7 times faster.
+--\end{document}
+-+\documentclass[nobib]{tufte-handout}
+-+
+-+\usepackage{amsmath}
+-+\usepackage[utf8]{inputenc}
+-+\usepackage{mathpazo}
+-+\usepackage{booktabs}
+-+\usepackage{microtype}
+-+\usepackage{tikz}
+-+\usepackage{enumitem}
+-+\usepackage{pgfplots}
+-+\pgfplotsset{width=9cm,compat=1.13}
+-+\usepackage{pgfplotstable}
+-+
+-+\usepackage{listings}
+-+
+-+\title{Comparison of several 3-Sum algorithms}
+-+\author{Riko Jacob (rikj@itu.dk)}
+-+
+-+\begin{document}
+-+\maketitle
+-+
+-+\section{Compared Algorithms and Impementations}
+-+
+-+We compare the naive triple loop implementation and a dictionary/HashMap based implementation, in both python3 and java.
+-+The algorithms are explained elsewhere.
+-+
+-+%\lstinputlisting{pythonSol/simple.py}
+-+
+-+\subsection{Experiments}
+-+
+-+The two algorithms are
+-+\begin{itemize}
+-+\item enumerating all triples in $O(n^3)$
+-+\item storing the numbers in a hashtable and check all pairs in $O(n^2)$ time
+-+\end{itemize}
+-+
+-+Both algorithms are implemented in java and python3.
+-+
+-+
+-+\newcommand{\tableDir}{Tables-rjx260-cce3eed}
+-+\newcommand{\xtableDir}{Tables-APALGtraining-cce3eed}
+-+We report on an experiment executed on a Thinkpad x260 with a i7-6500U CPU, with a  nominal frequency of 2.50GHz.
+-+We run serial programs, even though the CPU has 4~cores.
+-+The data can be found in \tableDir.
+-+The running times are determined by a python script running the testprogram as a subprocess.
+-+We report mean and standard deviation from 4 runs.
+-+We aim at the longest execution time being roughly 30 seconds.
+-+
+-+The data for the triple loop algorithm in python looks like this (column 0 is size, 1 is mean, 2 is standard deviation):
+-+
+-+\pgfplotstabletypeset{\tableDir /WeedJavaSimple.table}
+-+
+-+\begin{tikzpicture}
+-+	\begin{axis}[
+-+		title={Running times no triples, data in \tableDir},
+-+		xlabel={$N$},
+-+                xmode = log,
+-+                log ticks with fixed point,
+-+                ymode = log,
+-+		ylabel={Time (s)},
+-+		xmin=30, xmax=150000,
+-+		ymin=.03, ymax=75,
+-+		xtick={30,50,100,200,400, 800, 2000,5000,15000},
+-+		%ytick={0,40,80,160},
+-+		ytick={.05,.1,.2,.5,1,2,5,10,20},
+-+                legend style={at={(1.1,0)}, anchor=south west},
+-+                % legend pos=north east, %north west,
+-+		%ymajorgrids=true,
+-+		%grid style=dashed,
+-+	]
+-+        %	coordinates { (100,32)(200,37.8)(400,44.6)(800,61.8)(1600,83.8)(3200,114) };
+-+	\addplot[ color=red, mark=*,error bars/.cd,y dir=both,y explicit ]	table [x index=0, y index=1, y error index=2] {\tableDir /WeedPythSimple.table};
+-+        % coordinates { (100,132)(200,72.8)(400,144.6)(800,161.8)(1600,133.8)(3200,224) };
+-+	\addplot[color=blue, mark=x,error bars/.cd,y dir=both,y explicit ] table [x index=0, y index=1, y error index=2] {\tableDir /WeedJavaSimple.table};
+-+	\addplot[ color=brown, mark=x,error bars/.cd,y dir=both,y explicit ] table [x index=0, y index=1, y error index=2] {\tableDir /WeedPythDict.table};
+-+	\addplot[ color=green, mark=o,error bars/.cd,y dir=both,y explicit ] table [x index=0, y index=1, y error index=2] {\tableDir /WeedJavaDict.table};
+-+        %%%
+-+%        \addplot[color=yellow] expression[domain=8:3200] {.00009*x+.08};
+-+%        \addplot[color=yellow] expression[domain=8:3200] {.0009*x};
+-+%        \addplot[color=yellow] expression[domain=8:3200] {.0002*x*ln(x)};
+-+        \addplot[color=yellow] expression[domain=8:150000] {.000000031*x*x*x};
+-+        \addplot[color=yellow] expression[domain=8:150000] {.00000000011*x*x*x};
+-+%        \addplot[color=yellow] expression[domain=8:3200] {.00000000031*x*x*x*x};
+-+        \addplot[color=yellow] expression[domain=8:150000] {.00000013*x*x};
+-+        \addplot[color=yellow] expression[domain=8:150000] {.000000018*x*x};
+-+        %
+-+        %
+-+	% \addplot[ color=magenta, mark=*,error bars/.cd,y dir=both,y explicit ] table [x index=0, y index=1, y error index=2] {\xtableDir /WeedPythSimple.table};
+-+	% \addplot[color=cyan, mark=x,error bars/.cd,y dir=both,y explicit ] table [x index=0, y index=1, y error index=2] {\xtableDir /WeedJavaSimple.table};
+-+	% \addplot[ color=lime, mark=x,error bars/.cd,y dir=both,y explicit ] table [x index=0, y index=1, y error index=2] {\xtableDir /WeedPythDict.table};
+-+	% \addplot[ color=orange, mark=o,error bars/.cd,y dir=both,y explicit ] table [x index=0, y index=1, y error index=2] {\xtableDir /WeedJavaDict.table};
+-+	\legend{Python, Java, Fast Python, Fast Java, $x^2$, $x^3$}
+-+	\end{axis}
+-+\end{tikzpicture}
+-+
+-+The yellow helper-lines indicate that the running times are indeed cubic and quadratic.
+-+Based on these lines we conclude that for the triple loop, java is roughly 280 times faster,
+-+and for the hash based version it is roughly 7 times faster.
+-+\end{document}
+-diff --git a/software.md b/software.md
+-index 0da5383..f61a8b4 100644
+---- a/software.md
+-+++ b/software.md
+-@@ -1,111 +1,111 @@
+--# Recommended software
+--
+--This is an adapted version of the installation guide for the Algorithms and Data Structures Spring course. If your setup worked in that couurse, you are probably good to go. Note that we recommend you install both Java and Python for this course. See the original version here: <https://github.itu.dk/pages/algorithms/ads-2020-notes/preparation/software/>
+--
+--In general, we discourage using an IDE and instead highly recommend that you work with the command line. We will not need most features that IDEs provide - while IDEs are helpful for large software projects, we consider them a distraction from the content of this course.
+--
+--This page describes a consistent configuration for each operating system. The goal is to give everyone a UNIX-style command line where you can run Java or Python. The teachers use Linux and MacOS.
+--
+--## [Windows only] Windows Subsystem for Linux (WSL)
+--
+--Since you will work with UNIX-based tools (such as bash scripts and the terminal), please install and activate the Linux subsystem in Windows. This is a small Ubuntu distribution that works without the need for a virtual machine or dual-boot. To activate the WSL, follow [these instructions](https://docs.microsoft.com/en-us/windows/wsl/install-win10) and install Ubuntu 20.04 (or, if not available, you can also use 18.04).
+--
+--## Java
+--
+--We recommend the following route for installing OpenJDK-11, the latest version of Java that has Long-Term Support.
+--Other versions and variants might or might not work -- if you do not stick to the recommended route, you cannot expect support from TAs or teachers.
+--
+--- On Windows without WSL: Install it from [adoptopenjdk.net](https://adoptopenjdk.net/?variant=openjdk11&jvmVariant=hotspot) with the JVM HotSpot. (If you install Java this way, you can't use the WSL, but must use the Windows command prompt)
+--- On MacOS, Linux, or in the WSL: Install [sdkman](https://sdkman.io/install), which manages different Java versions and development software. In short, run the following commands in the terminal:
+--
+--```bash
+--curl -s "https://get.sdkman.io" | bash
+--source "$HOME/.sdkman/bin/sdkman-init.sh"
+--sdk install java
+--```
+--
+--At the time of writing, this should install `11.0.6.hs-adpt`. Important about this is `11` (the latest stable version of Java), `hs` (HotSpot), and `adpt` (AdoptOpenJDK). If sdkman installed any `11.x.y.hs-adpt` version, that's fine. If it installed a significantly different version, look at `sdk list java` for a list of available versions and install the one closest to it using `sdk install java 11.x.y.hs-adpt`.
+--
+--After installing Java, enter `java -version` in a command prompt and verify that the version number is correct:
+--```console
+--user@host:~$ java -version
+--openjdk version "11.0.6" 2020-01-14
+--OpenJDK Runtime Environment AdoptOpenJDK (build 11.0.6+10)
+--OpenJDK 64-Bit Server VM AdoptOpenJDK (build 11.0.6+10, mixed mode)
+--```
+--
+--### Sedgewick/Wayne Library
+--
+--Download the library associated with the Sedgewick and Wayne book, that is, the file [algs4.jar](https://algs4.cs.princeton.edu/code/algs4.jar). Choose a directory where to store the file, for example your home directory `$HOME`. In your `.bashrc`, set your `CLASSPATH` environment variable to `.:$HOME/algs4.jar`. On a UNIX command line with bash, the following would do the job:
+--```bash
+--curl -s "https://algs4.cs.princeton.edu/code/algs4.jar" > "$HOME/algs4.jar"
+--echo 'export CLASSPATH=".:$HOME/algs4.jar"' >> "$HOME/.bashrc"
+--source "$HOME/.bashrc"
+--```
+--On MacOS, the file .`bashrc` is not used. Instead, you need to use `$HOME/.bash_profile` or `$HOME/.profile` in the commands above.
+--
+--In Windows 10, you can set the CLASSPATH environment variables as follows:
+--Go to "Control Panel ⇒ System and Security ⇒ System ⇒ Advanced System Settings ⇒ Advanced ⇒ Environment Variables..." and add the correct path (such as `C:\path\to\algs4.jar`) to the "CLASSPATH" variable.
+--
+--There are other ways of installing algs4.jar, detailed instructions can be found in the middle of [this page](https://algs4.cs.princeton.edu/code/).
+--
+--### Test that it works
+--
+--In the end, it is important that you test that Java and the library are correctly installed.
+--In a command prompt, enter the following:
+--```bash
+--java edu.princeton.cs.algs4.Date
+--```
+--If everything is installed correctly, this will print a bunch of dates. Otherwise, it will complain with an error message.
+--
+--## Python
+--
+--Install Python 3.7 by downloading and running the _Anaconda_ installer appropriate for your operating system from the [anaconda website](https://www.anaconda.com/distribution/).
+--If you need more instructions, there are some [useful slides](https://learnit.itu.dk/mod/resource/view.php?id=104910).
+--Note that you must use Python 3 as we rely on some modern Python features, and if you use anything other than Anaconda, that's fine, but do not expect support from TAs or teachers.
+--
+--After installing Python, enter `python --version` in a command prompt and verify that the version number is correct:
+--```console
+--user@host:~$ python --version
+--Python 3.7.6
+--```
+--
+--### Python translation of Sedgewick/Wayne Library
+--
+--Download and install our translation of Sedgewick and Wayne's library into
+--Python 3. With Python 3 correctly installed, this should be as easy as running
+--the following command:
+--
+--```bash
+--pip install itu.algs4
+--```
+--
+--In case this doesn't quite work, you can find more detailed instructions on
+--[this page](https://github.com/itu-algorithms/itu.algs4).
+--
+--### Test that it works
+--
+--In the end, it is important that you test that Python as well as the library are correctly installed.
+--In a command prompt, enter the following:
+--```bash
+--python -c 'from itu.algs4.stdlib import stdio; stdio.write("Hello World!\n")'
+--```
+--If everything is installed correctly, this will print `Hello World!`. Otherwise, it will complain with an error message.
+--
+--## Editor
+--
+--We are editor-agnostic, that is, we will mainly work with the files directly and consider them to be plain text documents. The role of the editor in this course is just this: edit the content of files.
+--For this reason, we recommend that you do not use a heavy IDE, but a more light-weight editor.
+--Nevertheless, syntax highlighting is a nice feature.
+--The teachers use editors such as `vim` and `emacs`.
+--
+--Of course, `vim` and `emacs` have a learning curve, so you can use editors such
+--as Visual Studio Code as well. However, remember that in this course the editor
+--should just be used to edit files. It is best to compile and run programs from
+--the command line only.
+--
+--You can also find an in-depth class that teaches you common command-line tools at <https://missing.csail.mit.edu/>.
+--
+--## LaTeX
+--
+--We recommend you to install LaTeX locally on your machine. You can use the `texlive` distribution from <https://tug.org/texlive/>. (Windows users can use texlive from their WSL installation in the same way as Linux users.) Alternatively, you can use https://overleaf.com, which makes collaboration on tex documents very simple.
+-+# Recommended software
+-+
+-+This is an adapted version of the installation guide for the Algorithms and Data Structures Spring course. If your setup worked in that couurse, you are probably good to go. Note that we recommend you install both Java and Python for this course. See the original version here: <https://github.itu.dk/pages/algorithms/ads-2020-notes/preparation/software/>
+-+
+-+In general, we discourage using an IDE and instead highly recommend that you work with the command line. We will not need most features that IDEs provide - while IDEs are helpful for large software projects, we consider them a distraction from the content of this course.
+-+
+-+This page describes a consistent configuration for each operating system. The goal is to give everyone a UNIX-style command line where you can run Java or Python. The teachers use Linux and MacOS.
+-+
+-+## [Windows only] Windows Subsystem for Linux (WSL)
+-+
+-+Since you will work with UNIX-based tools (such as bash scripts and the terminal), please install and activate the Linux subsystem in Windows. This is a small Ubuntu distribution that works without the need for a virtual machine or dual-boot. To activate the WSL, follow [these instructions](https://docs.microsoft.com/en-us/windows/wsl/install-win10) and install Ubuntu 20.04 (or, if not available, you can also use 18.04).
+-+
+-+## Java
+-+
+-+We recommend the following route for installing OpenJDK-11, the latest version of Java that has Long-Term Support.
+-+Other versions and variants might or might not work -- if you do not stick to the recommended route, you cannot expect support from TAs or teachers.
+-+
+-+- On Windows without WSL: Install it from [adoptopenjdk.net](https://adoptopenjdk.net/?variant=openjdk11&jvmVariant=hotspot) with the JVM HotSpot. (If you install Java this way, you can't use the WSL, but must use the Windows command prompt)
+-+- On MacOS, Linux, or in the WSL: Install [sdkman](https://sdkman.io/install), which manages different Java versions and development software. In short, run the following commands in the terminal:
+-+
+-+```bash
+-+curl -s "https://get.sdkman.io" | bash
+-+source "$HOME/.sdkman/bin/sdkman-init.sh"
+-+sdk install java
+-+```
+-+
+-+At the time of writing, this should install `11.0.6.hs-adpt`. Important about this is `11` (the latest stable version of Java), `hs` (HotSpot), and `adpt` (AdoptOpenJDK). If sdkman installed any `11.x.y.hs-adpt` version, that's fine. If it installed a significantly different version, look at `sdk list java` for a list of available versions and install the one closest to it using `sdk install java 11.x.y.hs-adpt`.
+-+
+-+After installing Java, enter `java -version` in a command prompt and verify that the version number is correct:
+-+```console
+-+user@host:~$ java -version
+-+openjdk version "11.0.6" 2020-01-14
+-+OpenJDK Runtime Environment AdoptOpenJDK (build 11.0.6+10)
+-+OpenJDK 64-Bit Server VM AdoptOpenJDK (build 11.0.6+10, mixed mode)
+-+```
+-+
+-+### Sedgewick/Wayne Library
+-+
+-+Download the library associated with the Sedgewick and Wayne book, that is, the file [algs4.jar](https://algs4.cs.princeton.edu/code/algs4.jar). Choose a directory where to store the file, for example your home directory `$HOME`. In your `.bashrc`, set your `CLASSPATH` environment variable to `.:$HOME/algs4.jar`. On a UNIX command line with bash, the following would do the job:
+-+```bash
+-+curl -s "https://algs4.cs.princeton.edu/code/algs4.jar" > "$HOME/algs4.jar"
+-+echo 'export CLASSPATH=".:$HOME/algs4.jar"' >> "$HOME/.bashrc"
+-+source "$HOME/.bashrc"
+-+```
+-+On MacOS, the file .`bashrc` is not used. Instead, you need to use `$HOME/.bash_profile` or `$HOME/.profile` in the commands above.
+-+
+-+In Windows 10, you can set the CLASSPATH environment variables as follows:
+-+Go to "Control Panel ⇒ System and Security ⇒ System ⇒ Advanced System Settings ⇒ Advanced ⇒ Environment Variables..." and add the correct path (such as `C:\path\to\algs4.jar`) to the "CLASSPATH" variable.
+-+
+-+There are other ways of installing algs4.jar, detailed instructions can be found in the middle of [this page](https://algs4.cs.princeton.edu/code/).
+-+
+-+### Test that it works
+-+
+-+In the end, it is important that you test that Java and the library are correctly installed.
+-+In a command prompt, enter the following:
+-+```bash
+-+java edu.princeton.cs.algs4.Date
+-+```
+-+If everything is installed correctly, this will print a bunch of dates. Otherwise, it will complain with an error message.
+-+
+-+## Python
+-+
+-+Install Python 3.7 by downloading and running the _Anaconda_ installer appropriate for your operating system from the [anaconda website](https://www.anaconda.com/distribution/).
+-+If you need more instructions, there are some [useful slides](https://learnit.itu.dk/mod/resource/view.php?id=104910).
+-+Note that you must use Python 3 as we rely on some modern Python features, and if you use anything other than Anaconda, that's fine, but do not expect support from TAs or teachers.
+-+
+-+After installing Python, enter `python --version` in a command prompt and verify that the version number is correct:
+-+```console
+-+user@host:~$ python --version
+-+Python 3.7.6
+-+```
+-+
+-+### Python translation of Sedgewick/Wayne Library
+-+
+-+Download and install our translation of Sedgewick and Wayne's library into
+-+Python 3. With Python 3 correctly installed, this should be as easy as running
+-+the following command:
+-+
+-+```bash
+-+pip install itu.algs4
+-+```
+-+
+-+In case this doesn't quite work, you can find more detailed instructions on
+-+[this page](https://github.com/itu-algorithms/itu.algs4).
+-+
+-+### Test that it works
+-+
+-+In the end, it is important that you test that Python as well as the library are correctly installed.
+-+In a command prompt, enter the following:
+-+```bash
+-+python -c 'from itu.algs4.stdlib import stdio; stdio.write("Hello World!\n")'
+-+```
+-+If everything is installed correctly, this will print `Hello World!`. Otherwise, it will complain with an error message.
+-+
+-+## Editor
+-+
+-+We are editor-agnostic, that is, we will mainly work with the files directly and consider them to be plain text documents. The role of the editor in this course is just this: edit the content of files.
+-+For this reason, we recommend that you do not use a heavy IDE, but a more light-weight editor.
+-+Nevertheless, syntax highlighting is a nice feature.
+-+The teachers use editors such as `vim` and `emacs`.
+-+
+-+Of course, `vim` and `emacs` have a learning curve, so you can use editors such
+-+as Visual Studio Code as well. However, remember that in this course the editor
+-+should just be used to edit files. It is best to compile and run programs from
+-+the command line only.
+-+
+-+You can also find an in-depth class that teaches you common command-line tools at <https://missing.csail.mit.edu/>.
+-+
+-+## LaTeX
+-+
+-+We recommend you to install LaTeX locally on your machine. You can use the `texlive` distribution from <https://tug.org/texlive/>. (Windows users can use texlive from their WSL installation in the same way as Linux users.) Alternatively, you can use https://overleaf.com, which makes collaboration on tex documents very simple.
+diff --git a/Tables-DESKTOP-GVQ983C-05345d7/platform.txt b/Tables-DESKTOP-GVQ983C-05345d7/platform.txt
+deleted file mode 100644
+index 4c0c868..0000000
+--- a/Tables-DESKTOP-GVQ983C-05345d7/platform.txt
++++ /dev/null
+@@ -1,2 +0,0 @@
+-Linux-4.4.0-19041-Microsoft-x86_64-with-Ubuntu-16.04-xenial
+-x86_64
+diff --git a/Tables-DESKTOP-GVQ983C-05345d7/versions.txt b/Tables-DESKTOP-GVQ983C-05345d7/versions.txt
+deleted file mode 100644
+index baeeaa9..0000000
+--- a/Tables-DESKTOP-GVQ983C-05345d7/versions.txt
++++ /dev/null
+@@ -1,2 +0,0 @@
+-Python 3.5.2
+-javac 11.0.8
+diff --git a/Tables-rjx260-cce3eed/WeedJavaDict.table b/Tables-rjx260-cce3eed/WeedJavaDict.table
+index ef46942..b5d95d7 100644
+--- a/Tables-rjx260-cce3eed/WeedJavaDict.table
++++ b/Tables-rjx260-cce3eed/WeedJavaDict.table
+@@ -1,23 +1,23 @@
+-  30 0.165 0.084
+-  42 0.190 0.097
+-  59 0.162 0.094
+-  84 0.206 0.162
+- 118 0.224 0.078
+- 167 0.199 0.051
+- 235 0.180 0.093
+- 332 0.222 0.137
+- 468 0.258 0.158
+- 660 0.291 0.219
+- 931 0.271 0.204
+-1313 0.477 0.427
+-1852 0.401 0.243
+-2611 0.582 0.364
+-3682 0.812 0.509
+-5192 0.928 0.547
+-7321 1.238 0.718
+-10323 1.707 0.163
+-14556 2.846 0.181
+-20525 9.567 3.427
+-28940 17.058 9.801
+-40805 27.178 2.105
+-57536 59.606 16.182
++  30 0.165 0.084
++  42 0.190 0.097
++  59 0.162 0.094
++  84 0.206 0.162
++ 118 0.224 0.078
++ 167 0.199 0.051
++ 235 0.180 0.093
++ 332 0.222 0.137
++ 468 0.258 0.158
++ 660 0.291 0.219
++ 931 0.271 0.204
++1313 0.477 0.427
++1852 0.401 0.243
++2611 0.582 0.364
++3682 0.812 0.509
++5192 0.928 0.547
++7321 1.238 0.718
++10323 1.707 0.163
++14556 2.846 0.181
++20525 9.567 3.427
++28940 17.058 9.801
++40805 27.178 2.105
++57536 59.606 16.182
+diff --git a/Tables-rjx260-cce3eed/WeedJavaSimple.table b/Tables-rjx260-cce3eed/WeedJavaSimple.table
+index 6bf7342..48640e8 100644
+--- a/Tables-rjx260-cce3eed/WeedJavaSimple.table
++++ b/Tables-rjx260-cce3eed/WeedJavaSimple.table
+@@ -1,17 +1,17 @@
+-  30 0.098 0.010
+-  42 0.108 0.024
+-  59 0.100 0.010
+-  84 0.109 0.012
+- 118 0.146 0.030
+- 167 0.156 0.027
+- 235 0.169 0.047
+- 332 0.126 0.010
+- 468 0.154 0.018
+- 660 0.171 0.012
+- 931 0.257 0.020
+-1313 0.444 0.021
+-1852 0.907 0.090
+-2611 1.802 0.033
+-3682 4.677 0.089
+-5192 12.363 0.558
+-7321 34.498 0.189
++  30 0.098 0.010
++  42 0.108 0.024
++  59 0.100 0.010
++  84 0.109 0.012
++ 118 0.146 0.030
++ 167 0.156 0.027
++ 235 0.169 0.047
++ 332 0.126 0.010
++ 468 0.154 0.018
++ 660 0.171 0.012
++ 931 0.257 0.020
++1313 0.444 0.021
++1852 0.907 0.090
++2611 1.802 0.033
++3682 4.677 0.089
++5192 12.363 0.558
++7321 34.498 0.189
+diff --git a/Tables-rjx260-cce3eed/WeedPythDict.table b/Tables-rjx260-cce3eed/WeedPythDict.table
+index 577fc08..ec90ee7 100644
+--- a/Tables-rjx260-cce3eed/WeedPythDict.table
++++ b/Tables-rjx260-cce3eed/WeedPythDict.table
+@@ -1,20 +1,20 @@
+-  30 0.086 0.057
+-  42 0.083 0.047
+-  59 0.081 0.036
+-  84 0.087 0.048
+- 118 0.105 0.043
+- 167 0.113 0.047
+- 235 0.093 0.022
+- 332 0.130 0.040
+- 468 0.110 0.023
+- 660 0.165 0.040
+- 931 0.248 0.080
+-1313 0.354 0.092
+-1852 0.531 0.051
+-2611 0.905 0.078
+-3682 1.690 0.102
+-5192 3.442 0.169
+-7321 6.628 0.267
+-10323 12.984 0.446
+-14556 25.967 0.719
+-20525 53.251 1.440
++  30 0.086 0.057
++  42 0.083 0.047
++  59 0.081 0.036
++  84 0.087 0.048
++ 118 0.105 0.043
++ 167 0.113 0.047
++ 235 0.093 0.022
++ 332 0.130 0.040
++ 468 0.110 0.023
++ 660 0.165 0.040
++ 931 0.248 0.080
++1313 0.354 0.092
++1852 0.531 0.051
++2611 0.905 0.078
++3682 1.690 0.102
++5192 3.442 0.169
++7321 6.628 0.267
++10323 12.984 0.446
++14556 25.967 0.719
++20525 53.251 1.440
+diff --git a/Tables-rjx260-cce3eed/WeedPythSimple.table b/Tables-rjx260-cce3eed/WeedPythSimple.table
+index c822ea9..87ef9b7 100644
+--- a/Tables-rjx260-cce3eed/WeedPythSimple.table
++++ b/Tables-rjx260-cce3eed/WeedPythSimple.table
+@@ -1,12 +1,12 @@
+-  30 0.154 0.156
+-  42 0.090 0.042
+-  59 0.095 0.046
+-  84 0.108 0.043
+- 118 0.166 0.016
+- 167 0.297 0.088
+- 235 0.540 0.024
+- 332 1.453 0.055
+- 468 4.003 0.097
+- 660 10.639 0.249
+- 931 31.406 2.656
+-1313 86.087 1.449
++  30 0.154 0.156
++  42 0.090 0.042
++  59 0.095 0.046
++  84 0.108 0.043
++ 118 0.166 0.016
++ 167 0.297 0.088
++ 235 0.540 0.024
++ 332 1.453 0.055
++ 468 4.003 0.097
++ 660 10.639 0.249
++ 931 31.406 2.656
++1313 86.087 1.449
+diff --git a/Tables-rjx260-cce3eed/gitst.txt b/Tables-rjx260-cce3eed/gitst.txt
+index 101a66c..d666b12 100644
+--- a/Tables-rjx260-cce3eed/gitst.txt
++++ b/Tables-rjx260-cce3eed/gitst.txt
+@@ -1,6 +1,6 @@
+-?? Tables-rjx260-cce3eed/
+-?? Tables629d632-01/
+-?? Tables629d632-02/
+-?? Tables629d632/
+-?? Tables7725b11/
+-?? Tablesrjx260-729f950/
++?? Tables-rjx260-cce3eed/
++?? Tables629d632-01/
++?? Tables629d632-02/
++?? Tables629d632/
++?? Tables7725b11/
++?? Tablesrjx260-729f950/
+diff --git a/Tables-rjx260-cce3eed/versions.txt b/Tables-rjx260-cce3eed/versions.txt
+index f80a7db..900d411 100644
+--- a/Tables-rjx260-cce3eed/versions.txt
++++ b/Tables-rjx260-cce3eed/versions.txt
+@@ -1,2 +1,2 @@
+-Python 3.6.9
+-javac 11.0.8
++Python 3.6.9
++javac 11.0.8
+diff --git a/Tables1/WeedJavaDict.table b/Tables1/WeedJavaDict.table
+index fcefa76..15c2bb0 100644
+--- a/Tables1/WeedJavaDict.table
++++ b/Tables1/WeedJavaDict.table
+@@ -1,19 +1,19 @@
+-  30 0.097 0.009
+-  42 0.098 0.005
+-  59 0.100 0.007
+-  84 0.100 0.004
+- 118 0.116 0.009
+- 167 0.117 0.006
+- 235 0.124 0.006
+- 332 0.121 0.006
+- 468 0.155 0.028
+- 660 0.132 0.006
+- 931 0.155 0.004
+-1313 0.181 0.013
+-1852 0.213 0.024
+-2611 0.247 0.026
+-3682 0.435 0.045
+-5192 0.623 0.088
+-7321 0.809 0.098
+-10323 0.868 0.428
+-14556 2.119 0.506
++  30 0.097 0.009
++  42 0.098 0.005
++  59 0.100 0.007
++  84 0.100 0.004
++ 118 0.116 0.009
++ 167 0.117 0.006
++ 235 0.124 0.006
++ 332 0.121 0.006
++ 468 0.155 0.028
++ 660 0.132 0.006
++ 931 0.155 0.004
++1313 0.181 0.013
++1852 0.213 0.024
++2611 0.247 0.026
++3682 0.435 0.045
++5192 0.623 0.088
++7321 0.809 0.098
++10323 0.868 0.428
++14556 2.119 0.506
+diff --git a/Tables1/WeedJavaSimple.table b/Tables1/WeedJavaSimple.table
+index c5036c0..03f0d74 100644
+--- a/Tables1/WeedJavaSimple.table
++++ b/Tables1/WeedJavaSimple.table
+@@ -1,16 +1,16 @@
+-  30 0.115 0.020
+-  42 0.125 0.035
+-  59 0.136 0.038
+-  84 0.142 0.032
+- 118 0.169 0.029
+- 167 0.208 0.034
+- 235 0.173 0.019
+- 332 0.196 0.030
+- 468 0.200 0.043
+- 660 0.238 0.047
+- 931 0.288 0.019
+-1313 0.396 0.117
+-1852 0.563 0.230
+-2611 1.159 0.286
+-3682 4.907 0.179
+-5192 3.318 0.000
++  30 0.115 0.020
++  42 0.125 0.035
++  59 0.136 0.038
++  84 0.142 0.032
++ 118 0.169 0.029
++ 167 0.208 0.034
++ 235 0.173 0.019
++ 332 0.196 0.030
++ 468 0.200 0.043
++ 660 0.238 0.047
++ 931 0.288 0.019
++1313 0.396 0.117
++1852 0.563 0.230
++2611 1.159 0.286
++3682 4.907 0.179
++5192 3.318 0.000
+diff --git a/Tables1/WeedPythDict.table b/Tables1/WeedPythDict.table
+index 5c2a1b5..5ab8f63 100644
+--- a/Tables1/WeedPythDict.table
++++ b/Tables1/WeedPythDict.table
+@@ -1,19 +1,19 @@
+-  30 0.058 0.003
+-  42 0.064 0.008
+-  59 0.063 0.006
+-  84 0.065 0.005
+- 118 0.083 0.020
+- 167 0.093 0.043
+- 235 0.086 0.018
+- 332 0.108 0.034
+- 468 0.109 0.007
+- 660 0.121 0.038
+- 931 0.192 0.027
+-1313 0.242 0.090
+-1852 0.154 0.022
+-2611 0.270 0.129
+-3682 1.537 0.321
+-5192 2.553 1.594
+-7321 4.922 2.854
+-10323 2.711 2.436
+-14556 3.329 1.685
++  30 0.058 0.003
++  42 0.064 0.008
++  59 0.063 0.006
++  84 0.065 0.005
++ 118 0.083 0.020
++ 167 0.093 0.043
++ 235 0.086 0.018
++ 332 0.108 0.034
++ 468 0.109 0.007
++ 660 0.121 0.038
++ 931 0.192 0.027
++1313 0.242 0.090
++1852 0.154 0.022
++2611 0.270 0.129
++3682 1.537 0.321
++5192 2.553 1.594
++7321 4.922 2.854
++10323 2.711 2.436
++14556 3.329 1.685
+diff --git a/Tables1/WeedPythSimple.table b/Tables1/WeedPythSimple.table
+index 22d151c..b410d8b 100644
+--- a/Tables1/WeedPythSimple.table
++++ b/Tables1/WeedPythSimple.table
+@@ -1,10 +1,10 @@
+-  30 0.101 0.071
+-  42 0.096 0.062
+-  59 0.078 0.009
+-  84 0.090 0.008
+- 118 0.136 0.023
+- 167 0.135 0.069
+- 235 0.549 0.108
+- 332 1.115 0.302
+- 468 3.329 1.730
+- 660 3.998 1.164
++  30 0.101 0.071
++  42 0.096 0.062
++  59 0.078 0.009
++  84 0.090 0.008
++ 118 0.136 0.023
++ 167 0.135 0.069
++ 235 0.549 0.108
++ 332 1.115 0.302
++ 468 3.329 1.730
++ 660 3.998 1.164
+diff --git a/Tables56c1cb7/WeedJavaDict.table b/Tables56c1cb7/WeedJavaDict.table
+index 062193b..ef68697 100644
+--- a/Tables56c1cb7/WeedJavaDict.table
++++ b/Tables56c1cb7/WeedJavaDict.table
+@@ -1,23 +1,23 @@
+-  30 0.099 0.008
+-  42 0.097 0.007
+-  59 0.101 0.009
+-  84 0.106 0.011
+- 118 0.115 0.012
+- 167 0.118 0.005
+- 235 0.119 0.010
+- 332 0.168 0.042
+- 468 0.164 0.026
+- 660 0.154 0.009
+- 931 0.164 0.014
+-1313 0.211 0.030
+-1852 0.241 0.038
+-2611 0.287 0.015
+-3682 0.426 0.033
+-5192 0.646 0.033
+-7321 0.844 0.049
+-10323 1.699 0.051
+-14556 2.859 0.319
+-20525 6.030 0.105
+-28940 10.695 0.618
+-40805 26.463 1.058
+-57536 47.010 3.871
++  30 0.099 0.008
++  42 0.097 0.007
++  59 0.101 0.009
++  84 0.106 0.011
++ 118 0.115 0.012
++ 167 0.118 0.005
++ 235 0.119 0.010
++ 332 0.168 0.042
++ 468 0.164 0.026
++ 660 0.154 0.009
++ 931 0.164 0.014
++1313 0.211 0.030
++1852 0.241 0.038
++2611 0.287 0.015
++3682 0.426 0.033
++5192 0.646 0.033
++7321 0.844 0.049
++10323 1.699 0.051
++14556 2.859 0.319
++20525 6.030 0.105
++28940 10.695 0.618
++40805 26.463 1.058
++57536 47.010 3.871
+diff --git a/Tables56c1cb7/WeedJavaSimple.table b/Tables56c1cb7/WeedJavaSimple.table
+index 176ef84..cda2a37 100644
+--- a/Tables56c1cb7/WeedJavaSimple.table
++++ b/Tables56c1cb7/WeedJavaSimple.table
+@@ -1,17 +1,17 @@
+-  30 0.100 0.009
+-  42 0.124 0.040
+-  59 0.119 0.036
+-  84 0.128 0.014
+- 118 0.135 0.016
+- 167 0.153 0.025
+- 235 0.165 0.044
+- 332 0.197 0.073
+- 468 0.179 0.036
+- 660 0.207 0.021
+- 931 0.287 0.028
+-1313 0.494 0.049
+-1852 0.977 0.017
+-2611 1.821 0.037
+-3682 4.745 0.004
+-5192 12.935 0.209
+-7321 35.862 1.411
++  30 0.100 0.009
++  42 0.124 0.040
++  59 0.119 0.036
++  84 0.128 0.014
++ 118 0.135 0.016
++ 167 0.153 0.025
++ 235 0.165 0.044
++ 332 0.197 0.073
++ 468 0.179 0.036
++ 660 0.207 0.021
++ 931 0.287 0.028
++1313 0.494 0.049
++1852 0.977 0.017
++2611 1.821 0.037
++3682 4.745 0.004
++5192 12.935 0.209
++7321 35.862 1.411
+diff --git a/Tables56c1cb7/WeedPythDict.table b/Tables56c1cb7/WeedPythDict.table
+index 609479c..1c07e93 100644
+--- a/Tables56c1cb7/WeedPythDict.table
++++ b/Tables56c1cb7/WeedPythDict.table
+@@ -1,20 +1,20 @@
+-  30 0.062 0.002
+-  42 0.060 0.007
+-  59 0.060 0.003
+-  84 0.061 0.004
+- 118 0.077 0.009
+- 167 0.096 0.033
+- 235 0.100 0.025
+- 332 0.103 0.023
+- 468 0.134 0.036
+- 660 0.176 0.099
+- 931 0.196 0.028
+-1313 0.326 0.049
+-1852 0.504 0.027
+-2611 0.975 0.104
+-3682 1.682 0.020
+-5192 3.289 0.066
+-7321 6.556 0.182
+-10323 13.075 0.062
+-14556 25.633 0.483
+-20525 53.282 0.679
++  30 0.062 0.002
++  42 0.060 0.007
++  59 0.060 0.003
++  84 0.061 0.004
++ 118 0.077 0.009
++ 167 0.096 0.033
++ 235 0.100 0.025
++ 332 0.103 0.023
++ 468 0.134 0.036
++ 660 0.176 0.099
++ 931 0.196 0.028
++1313 0.326 0.049
++1852 0.504 0.027
++2611 0.975 0.104
++3682 1.682 0.020
++5192 3.289 0.066
++7321 6.556 0.182
++10323 13.075 0.062
++14556 25.633 0.483
++20525 53.282 0.679
+diff --git a/Tables56c1cb7/WeedPythSimple.table b/Tables56c1cb7/WeedPythSimple.table
+index a3f1c5d..a26b5ad 100644
+--- a/Tables56c1cb7/WeedPythSimple.table
++++ b/Tables56c1cb7/WeedPythSimple.table
+@@ -1,12 +1,12 @@
+-  30 0.065 0.004
+-  42 0.069 0.015
+-  59 0.076 0.014
+-  84 0.106 0.031
+- 118 0.181 0.040
+- 167 0.247 0.013
+- 235 0.563 0.029
+- 332 1.873 0.604
+- 468 4.454 0.320
+- 660 11.767 0.936
+- 931 33.581 3.052
+-1313 87.846 0.621
++  30 0.065 0.004
++  42 0.069 0.015
++  59 0.076 0.014
++  84 0.106 0.031
++ 118 0.181 0.040
++ 167 0.247 0.013
++ 235 0.563 0.029
++ 332 1.873 0.604
++ 468 4.454 0.320
++ 660 11.767 0.936
++ 931 33.581 3.052
++1313 87.846 0.621
+diff --git a/Tables56c1cb7/gitst.txt b/Tables56c1cb7/gitst.txt
+index 13e5dca..8934e71 100644
+--- a/Tables56c1cb7/gitst.txt
++++ b/Tables56c1cb7/gitst.txt
+@@ -1,2 +1,2 @@
+-?? Tables56c1cb7/
+-?? patch.diff
++?? Tables56c1cb7/
++?? patch.diff
+diff --git a/Weed.java b/Weed.java
+index 98e1e5a..e97f937 100644
+--- a/Weed.java
++++ b/Weed.java
+@@ -1,44 +1,44 @@
+-import java.util.Random;
+-import java.util.ArrayList;
+-import java.util.List;
+-import java.util.Collections;
+-
+-public class Weed
+-{
+-
+-	public static long mynextLong(Random R) {
+-		return R.nextLong() / 4;
+-	}
+-    public static void main(final String[] args) {
+-		final int N = Integer.parseInt(args[0]);
+-		final List<Long> vals = new ArrayList<>();
+-
+-		final Random R = new Random(Integer.parseInt(args[1]));
+-		if(args.length > 1){
+-			R.setSeed(Long.parseLong(args[1]) + N);			
+-		} 
+-
+-		vals.add(mynextLong(R));
+-		vals.add(mynextLong(R));
+-		// vals.add(-(vals.get(0) + vals.get(1) ));
+-		vals.add(mynextLong(R));
+-		// if ( R.nextBoolean())  vals.set(2,vals.get(2)+1);
+-		for (int i = 3; i<N; ++i)
+-				vals.add(mynextLong(R));
+-		
+-		Collections.shuffle(vals,R);
+-
+-		System.out.println(N);
+-		for (int i = 0; i<N; ++i) System.out.println(vals.get(i));
+-
+-//	for (int i = 0; i<N; ++i)
+-//	    for (int j = i+1; j<N; ++j)
+-//		for (int k = j+1; k<N; ++k)
+-//		    for (int l = k+1; l<N; ++l)
+-//			if (vals.get(i) + vals.get(j) + vals.get(k) + vals.get(l) == 0) 
+-//			{
+-//			 System.out.println(i+" "+j+" "+k+" "+l);
+-//			 //System.exit(0);
+-//			}
+-    }
+-}
++import java.util.Random;
++import java.util.ArrayList;
++import java.util.List;
++import java.util.Collections;
++
++public class Weed
++{
++
++	public static long mynextLong(Random R) {
++		return R.nextLong() / 4;
++	}
++    public static void main(final String[] args) {
++		final int N = Integer.parseInt(args[0]);
++		final List<Long> vals = new ArrayList<>();
++
++		final Random R = new Random(Integer.parseInt(args[1]));
++		if(args.length > 1){
++			R.setSeed(Long.parseLong(args[1]) + N);			
++		} 
++
++		vals.add(mynextLong(R));
++		vals.add(mynextLong(R));
++		// vals.add(-(vals.get(0) + vals.get(1) ));
++		vals.add(mynextLong(R));
++		// if ( R.nextBoolean())  vals.set(2,vals.get(2)+1);
++		for (int i = 3; i<N; ++i)
++				vals.add(mynextLong(R));
++		
++		Collections.shuffle(vals,R);
++
++		System.out.println(N);
++		for (int i = 0; i<N; ++i) System.out.println(vals.get(i));
++
++//	for (int i = 0; i<N; ++i)
++//	    for (int j = i+1; j<N; ++j)
++//		for (int k = j+1; k<N; ++k)
++//		    for (int l = k+1; l<N; ++l)
++//			if (vals.get(i) + vals.get(j) + vals.get(k) + vals.get(l) == 0) 
++//			{
++//			 System.out.println(i+" "+j+" "+k+" "+l);
++//			 //System.exit(0);
++//			}
++    }
++}
+diff --git a/allexps.py b/allexps.py
+index 582463d..3df4f64 100644
+--- a/allexps.py
++++ b/allexps.py
+@@ -1,32 +1,35 @@
+-from APAexp import Process,JavaProcess,PythonProcess, runExp, prepareTableDir
+-
+-stressP = [ JavaProcess("Produce.java",parameters=["plant"],nickname='PrdPt'),
+-            JavaProcess("Produce.java",parameters=["no"],nickname='PrdNo')]
+-testlist = [
+-    JavaProcess("javaSol/Simple.java",    nickname='JavaSimple'),
+-    JavaProcess("javaSol/HashPairs.java", nickname='JavaDict'),
+-    PythonProcess('pythonSol/simple.py',  nickname='PythSimple'),
+-    PythonProcess('pythonSol/fastDict.py',nickname='PythDict')
+-]
+-
+-TableDir = prepareTableDir()
+-
+-# stresstest, aiming at correctness
+-stressListN = [10,50] 
+-for seed in [5679]: # runExp does 3 runs with modified seed, add more seeds here if needed
+-    for prodProc in stressP:
+-        resDict = dict()
+-        for testProc in testlist:
+-            print(seed,prodProc.nickname,testProc.nickname)
+-            runExp(prodProc,testProc,TableDir,results=resDict, 
+-                    Nlist=stressListN,seed=seed)
+-
+-# now the performance tests
+-Nlist = [int(90*1.41**i) for i in range(2)]
+-print("-"*80)
+-print(Nlist)
+-timelimit = 10     # in seconds; if we exceed this, we don't try anything bigger
+-hardtimelimit = 100 # then the OS is going to kill it -- protection agains infinite loops and alike
+-weed=JavaProcess('Weed.java') ## supplying only 
+-for pp in testlist:
+-    runExp(weed,pp,TableDir, Nlist=Nlist,seed=12345,timelimit = timelimit,hardtimelimit=hardtimelimit)
++from APAexp import Process,JavaProcess,PythonProcess, runExp, prepareTableDir
++
++stressP = [ JavaProcess("Produce.java",parameters=["plant"],nickname='PrdPt'),
++            JavaProcess("Produce.java",parameters=["no"],nickname='PrdNo')]
++            # JavaProcess("Produce.java",parameters=["mistake"],nickname='PrdMs')]
++testlist = [
++    JavaProcess("javaSol/Simple.java",    nickname='JavaSimple'),
++    JavaProcess("javaSol/HashPairs.java", nickname='JavaDict'),
++    PythonProcess('pythonSol/simple.py',  nickname='PythSimple'),
++    PythonProcess('pythonSol/fastDict.py',nickname='PythDict'),
++    # JavaProcess("javaSol/HashPairsError.java",nickname='JavaHashError'),
++    # PythonProcess('pythonSol/fastDictError.py',nickname='PythDictError')
++]
++
++TableDir = prepareTableDir()
++
++# stresstest, aiming at correctness
++stressListN = [10,50] 
++for seed in [5679]: # runExp does 3 runs with modified seed, add more seeds here if needed
++    for prodProc in stressP:
++        resDict = dict()
++        for testProc in testlist:
++            print(seed,prodProc.nickname,testProc.nickname)
++            runExp(prodProc,testProc,TableDir,results=resDict, 
++                    Nlist=stressListN,seed=seed)
++
++# now the performance tests
++Nlist = [int(90*1.41**i) for i in range(30)] #chage the input size here
++print("-"*80)
++print(Nlist)
++timelimit = 30     # in seconds; if we exceed this, we don't try anything bigger
++hardtimelimit = 100 # then the OS is going to kill it -- protection agains infinite loops and alike
++weed=JavaProcess('Weed.java') ## supplying only 
++for pp in testlist:
++    runExp(weed,pp,TableDir, Nlist=Nlist,seed=12345,timelimit = timelimit,hardtimelimit=hardtimelimit)
+diff --git a/experiment.py b/experiment.py
+index 5f65484..e70fff5 100644
+--- a/experiment.py
++++ b/experiment.py
+@@ -1,101 +1,101 @@
+-# this is python3
+-import sys,random,subprocess,statistics,pathlib,platform
+-from timeit import default_timer as timer
+-
+-
+-python='python3'
+-java="java"
+-javac="javac"
+-
+-Nlist = [int(30*1.41**i) for i in range(29)]
+-print(Nlist)
+-
+-timelimit = 30      # in seconds; if we exceed this, we don't try anything bigger
+-hardtimelimit = 100 # then the OS is going to kill it -- protection agains infinite loops and alike
+-
+-githash = subprocess.check_output(["git","rev-parse","--short","HEAD"]).decode("utf-8")[:-1]
+-nodename = platform.node()
+-
+-TableDir="./Tables-{}-{}".format(nodename,githash)
+-i=1
+-while pathlib.Path(TableDir).exists():
+-    TableDir="./Tables{}-{}-{:02}".format(githash,nodename,i)
+-    i += 1
+-testdir = pathlib.Path(TableDir)
+-testdir.mkdir() # force it to be empty - parents=True, exist_ok=True)
+-if len(subprocess.check_output(["git","status","--porcelain"])) > 0:
+-    subprocess.run("cd {0}; git status --porcelain > gitst.txt; git diff > patch.diff".format(TableDir),shell=True)
+-
+-subprocess.run("cd {}; ({} --version; {} -version;{} -version) > versions.txt".format(TableDir,python,javac,java),shell=True)
+-
+-with (testdir / 'platform.txt').open('w') as pf:
+-    print(platform.platform(), file=pf)
+-    print(platform.processor(), file=pf)
+-
+-subprocess.run([javac, "Weed.java"],check=True)
+-weed=(java, '-cp', '.','Weed') ## supplying only 
+-subprocess.run([javac, "javaSol/Simple.java"],check=True)
+-simpJava=(java, '-cp', 'javaSol','Simple')
+-subprocess.run([javac, "javaSol/HashPairs.java"],check=True)
+-dictJava=(java, '-cp', 'javaSol','HashPairs')
+-
+-simpPyth=(python, 'pythonSol/simple.py')
+-dictPyth=(python, 'pythonSol/fastDict.py')
+-
+-def prodExp(prod,name,seed=0):
+-    runExp(prod,simpJava,tableFile=TableDir+'/'+name+'JavaSimple.table', Nlist=Nlist,seed=seed)
+-    runExp(prod,simpPyth,tableFile=TableDir+'/'+name+'PythSimple.table', Nlist=Nlist,seed=seed)
+-    runExp(prod,dictJava,tableFile=TableDir+'/'+name+'JavaDict.table',   Nlist=Nlist,seed=seed)
+-    runExp(prod,dictPyth,tableFile=TableDir+'/'+name+'PythDict.table',   Nlist=Nlist,seed=seed)
+-
+-def _main():
+-    prodExp(weed,"Weed",seed = 12345)
+-
+-results = dict()
+-def runExp(producer,tested,tableFile='', Nlist=[100],seed = 0, results = results ):
+-    FastCmp = dict()
+-    for N in Nlist:
+-        FastCmp[N]=[]
+-    for i in range(4):
+-        myseed = seed + 7896*i
+-        extra = [ str(myseed) ] if seed > 0 else []
+-        for N in Nlist:
+-            print( tableFile, tuple( list(producer) + [str(N)] +extra) )
+-            try:
+-                start = timer()
+-                ps = subprocess.Popen(tuple( list(producer) + [str(N)] + extra), stdout=subprocess.PIPE,stderr=subprocess.DEVNULL)
+-                result = subprocess.run(tested, stdin=ps.stdout,stderr=subprocess.PIPE,stdout=subprocess.PIPE,check=True, timeout=hardtimelimit)
+-                ps.wait()
+-                end = timer()
+-            except subprocess.TimeoutExpired as e:
+-                break
+-
+-            measure = end-start
+-            FastCmp[N].append(measure)
+-            print("Time: " + str(measure)   )
+-            if seed > 0:
+-                outp = result.stdout.decode("utf-8")
+-                if (N,myseed) in results  and not results[(N,myseed)] == outp:
+-                    print("different results for N={} seed={} tested={}: is={} ({}), should be {}".format(
+-                        N,myseed,tested,outp,result.stderr.decode("utf-8"),results[(N,myseed)]))
+-                    exit(1)
+-                else:
+-                    results[(N,myseed)] = outp
+-            #        print('Output: ' + output.decode("utf-8") )
+-            if measure > timelimit:
+-                break
+-
+-    if tableFile == '':
+-        table = sys.stdout
+-    else:
+-        table = open(tableFile,'w')
+-
+-    for N in sorted(FastCmp.keys()):
+-        mm = FastCmp[N]
+-        if len(mm) > 0: ## mean and stddev are somewhat arbitrary - we'll get back to this later in the course
+-            mean = statistics.mean(mm) 
+-            stddev = statistics.stdev(mm) if len(mm) > 1 else 0 
+-            print("{:4} {:.3f} {:.3f}".format(N,mean,stddev),file=table)
+-
+-if __name__ == '__main__':
+-    _main()
++# this is python3
++import sys,random,subprocess,statistics,pathlib,platform
++from timeit import default_timer as timer
++
++
++python='python3'
++java="java"
++javac="javac"
++
++Nlist = [int(30*1.41**i) for i in range(29)]
++print(Nlist)
++
++timelimit = 30      # in seconds; if we exceed this, we don't try anything bigger
++hardtimelimit = 100 # then the OS is going to kill it -- protection agains infinite loops and alike
++
++githash = subprocess.check_output(["git","rev-parse","--short","HEAD"]).decode("utf-8")[:-1]
++nodename = platform.node()
++
++TableDir="./Tables-{}-{}".format(nodename,githash)
++i=1
++while pathlib.Path(TableDir).exists():
++    TableDir="./Tables{}-{}-{:02}".format(githash,nodename,i)
++    i += 1
++testdir = pathlib.Path(TableDir)
++testdir.mkdir() # force it to be empty - parents=True, exist_ok=True)
++if len(subprocess.check_output(["git","status","--porcelain"])) > 0:
++    subprocess.run("cd {0}; git status --porcelain > gitst.txt; git diff > patch.diff".format(TableDir),shell=True)
++
++subprocess.run("cd {}; ({} --version; {} -version;{} -version) > versions.txt".format(TableDir,python,javac,java),shell=True)
++
++with (testdir / 'platform.txt').open('w') as pf:
++    print(platform.platform(), file=pf)
++    print(platform.processor(), file=pf)
++
++subprocess.run([javac, "Weed.java"],check=True)
++weed=(java, '-cp', '.','Weed') ## supplying only 
++subprocess.run([javac, "javaSol/Simple.java"],check=True)
++simpJava=(java, '-cp', 'javaSol','Simple')
++subprocess.run([javac, "javaSol/HashPairs.java"],check=True)
++dictJava=(java, '-cp', 'javaSol','HashPairs')
++
++simpPyth=(python, 'pythonSol/simple.py')
++dictPyth=(python, 'pythonSol/fastDict.py')
++
++def prodExp(prod,name,seed=0):
++    runExp(prod,simpJava,tableFile=TableDir+'/'+name+'JavaSimple.table', Nlist=Nlist,seed=seed)
++    runExp(prod,simpPyth,tableFile=TableDir+'/'+name+'PythSimple.table', Nlist=Nlist,seed=seed)
++    runExp(prod,dictJava,tableFile=TableDir+'/'+name+'JavaDict.table',   Nlist=Nlist,seed=seed)
++    runExp(prod,dictPyth,tableFile=TableDir+'/'+name+'PythDict.table',   Nlist=Nlist,seed=seed)
++
++def _main():
++    prodExp(weed,"Weed",seed = 12345)
++
++results = dict()
++def runExp(producer,tested,tableFile='', Nlist=[100],seed = 0, results = results ):
++    FastCmp = dict()
++    for N in Nlist:
++        FastCmp[N]=[]
++    for i in range(4):
++        myseed = seed + 7896*i
++        extra = [ str(myseed) ] if seed > 0 else []
++        for N in Nlist:
++            print( tableFile, tuple( list(producer) + [str(N)] +extra) )
++            try:
++                start = timer()
++                ps = subprocess.Popen(tuple( list(producer) + [str(N)] + extra), stdout=subprocess.PIPE,stderr=subprocess.DEVNULL)
++                result = subprocess.run(tested, stdin=ps.stdout,stderr=subprocess.PIPE,stdout=subprocess.PIPE,check=True, timeout=hardtimelimit)
++                ps.wait()
++                end = timer()
++            except subprocess.TimeoutExpired as e:
++                break
++
++            measure = end-start
++            FastCmp[N].append(measure)
++            print("Time: " + str(measure)   )
++            if seed > 0:
++                outp = result.stdout.decode("utf-8")
++                if (N,myseed) in results  and not results[(N,myseed)] == outp:
++                    print("different results for N={} seed={} tested={}: is={} ({}), should be {}".format(
++                        N,myseed,tested,outp,result.stderr.decode("utf-8"),results[(N,myseed)]))
++                    exit(1)
++                else:
++                    results[(N,myseed)] = outp
++            #        print('Output: ' + output.decode("utf-8") )
++            if measure > timelimit:
++                break
++
++    if tableFile == '':
++        table = sys.stdout
++    else:
++        table = open(tableFile,'w')
++
++    for N in sorted(FastCmp.keys()):
++        mm = FastCmp[N]
++        if len(mm) > 0: ## mean and stddev are somewhat arbitrary - we'll get back to this later in the course
++            mean = statistics.mean(mm) 
++            stddev = statistics.stdev(mm) if len(mm) > 1 else 0 
++            print("{:4} {:.3f} {:.3f}".format(N,mean,stddev),file=table)
++
++if __name__ == '__main__':
++    _main()
+diff --git a/javaSol/HashPairs.java b/javaSol/HashPairs.java
+index 4b10de6..d8f7f38 100644
+--- a/javaSol/HashPairs.java
++++ b/javaSol/HashPairs.java
+@@ -1,29 +1,33 @@
+-import java.util.Scanner;
+-import java.util.HashMap;
+-
+-public class HashPairs
+-{
+-    public static void main(String[] args)
+-    {
+-        HashMap<Long,Integer>H = new HashMap<Long,Integer>();
+-
+-	Scanner S= new Scanner(System.in);
+-	int N = Integer.parseInt(S.nextLine());
+-	long[] vals = new long[N];
+-	for(int i= 0; i < N; i+= 1) {
+-        vals[i] = Long.parseLong(S.nextLine());
+-        H.put(vals[i],i);
+-    }
+-
+-        // the variables are ordered l < k < j < i; sorry
+-        for (int i = 0; i<N; ++i) 
+-            for (int j = 0; j < i; j+= 1) {// i goes through {0, ..., N-1}
+-                Integer l = H.get(-vals[i]-vals[j]);
+-                if (l != null && l<j ) {
+-                    System.out.println("Found");
+-                    System.exit(0);                    
+-                }
+-            }
+-        System.out.println("None");
+-    }
+-}
++import java.util.Scanner;
++import java.util.HashMap;
++
++public class HashPairs
++{
++    public static void main(String[] args)
++    {
++        HashMap<Long,Integer>H = new HashMap<Long,Integer>();
++
++    Scanner S = new Scanner(System.in);
++     //Scanner S = new Scanner("3\n10\n10\n-20");
++	int N = Integer.parseInt(S.nextLine());
++	long[] vals = new long[N];
++	for(int i= 0; i < N; i+= 1) {
++        vals[i] = Long.parseLong(S.nextLine());
++        H.put(vals[i],i);
++    }
++
++        // the variables are ordered l < k < j < i; sorry
++        for (int i = 0; i<N; ++i) 
++            for (int j = 0; j < i; j+= 1) {// i goes through {0, ..., N-1}
++                Integer l = H.get(-vals[i]-vals[j]);
++                if (l != null && j<l ) {
++                    // if you dont have the && j<l then the code will execute found
++                    // without you having a triple. You might have a double and the code will execute
++                    // found as you had a triple
++                    System.out.println("Found");
++                    System.exit(0);                    
++                }
++            }
++        System.out.println("None");
++    }
++}
+diff --git a/javaSol/Simple.java b/javaSol/Simple.java
+index f08d6be..83f361f 100644
+--- a/javaSol/Simple.java
++++ b/javaSol/Simple.java
+@@ -1,23 +1,23 @@
+-import java.util.Scanner;
+-
+-public class Simple
+-{
+-    public static void main(String[] args)
+-    {
+-	Scanner S= new Scanner(System.in);
+-	int N = Integer.parseInt(S.nextLine());
+-	long[] vals = new long[N];
+-	for(int i= 0; i < N; i+= 1) vals[i] = Long.parseLong(S.nextLine());
+-
+-	for (int i = 0; i < N; i+= 1) // i goes through {0, ..., N-1}
+-	    for (int j = i+1; j<N; ++j)
+-			for (int k = j+1; k<N; ++k)
+-				if (vals[i] + vals[j] + vals[k] == 0) 
+-				{
+-					System.err.println(i+":"+vals[i]+" "+j+":"+vals[j]+" "+k+":"+vals[k] );
+-					System.out.println("Found");
+-					System.exit(0);
+-				}
+-        System.out.println("None");
+-    }
+-}
++import java.util.Scanner;
++
++public class Simple
++{
++    public static void main(String[] args)
++    {
++	Scanner S  = new Scanner (System.in);
++	int N = Integer.parseInt(S.nextLine());
++	long[] vals = new long[N];
++	for(int i= 0; i < N; i+= 1) vals[i] = Long.parseLong(S.nextLine());
++
++	for (int i = 0; i < N; i+= 1) // i goes through {0, ..., N-1}
++	    for (int j = i+1; j<N; ++j)
++			for (int k = j+1; k<N; ++k)
++				if (vals[i] + vals[j] + vals[k] == 0) 
++				{
++					System.err.println(i+":"+vals[i]+" "+j+":"+vals[j]+" "+k+":"+vals[k] );
++					System.out.println("Found");
++					System.exit(0);
++				}
++        System.out.println("None");
++    }
++}
+diff --git a/myexp.py b/myexp.py
+index 854feac..f3d30fc 100644
+--- a/myexp.py
++++ b/myexp.py
+@@ -1,21 +1,21 @@
+-from APAexp import Process,JavaProcess,PythonProcess, runExp, prepareTableDir
+-
+-Nlist = [int(90*1.41**i) for i in range(20)]
+-print(Nlist)
+-
+-timelimit = 10     # in seconds; if we exceed this, we don't try anything bigger
+-hardtimelimit = 100 # then the OS is going to kill it -- protection agains infinite loops and alike
+-
+-TableDir = prepareTableDir()
+-
+-weed=JavaProcess('Weed.java') ## supplying only 
+-
+-testlist = [
+-    JavaProcess("javaSol/Simple.java",    nickname='JavaSimple'),
+-    JavaProcess("javaSol/HashPairs.java", nickname='JavaDict'),
+-    PythonProcess('pythonSol/simple.py',  nickname='PythSimple'),
+-    PythonProcess('pythonSol/fastDict.py',nickname='PythDict')
+-]
+-for pp in testlist:
+-    runExp(weed,pp,TableDir, Nlist=Nlist,seed=12345,timelimit = timelimit,hardtimelimit=hardtimelimit)
+-
++from APAexp import Process,JavaProcess,PythonProcess, runExp, prepareTableDir
++
++Nlist = [int(90*1.41**i) for i in range(20)]
++print(Nlist)
++
++timelimit = 10     # in seconds; if we exceed this, we don't try anything bigger
++hardtimelimit = 100 # then the OS is going to kill it -- protection agains infinite loops and alike
++
++TableDir = prepareTableDir()
++
++weed=JavaProcess('Weed.java') ## supplying only 
++
++testlist = [
++    JavaProcess("javaSol/Simple.java",    nickname='JavaSimple'),
++    JavaProcess("javaSol/HashPairs.java", nickname='JavaDict'),
++    PythonProcess('pythonSol/simple.py',  nickname='PythSimple'),
++    PythonProcess('pythonSol/fastDict.py',nickname='PythDict')
++]
++for pp in testlist:
++    runExp(weed,pp,TableDir, Nlist=Nlist,seed=12345,timelimit = timelimit,hardtimelimit=hardtimelimit)
++
+diff --git a/pythonSol/fastDict.py b/pythonSol/fastDict.py
+index 2be7390..5ec3913 100644
+--- a/pythonSol/fastDict.py
++++ b/pythonSol/fastDict.py
+@@ -1,18 +1,18 @@
+-import sys
+-
+-def foursum(vals):
+-    N=len(vals)
+-    P = dict()
+-    for i in range(N):
+-        P[+vals[i]] = i
+-
+-    for j in range(N):
+-        for i in range(j):
+-            if P.get(-vals[i]-vals[j],0) > j:
+-                return True
+-    return False
+-
+-if __name__ == '__main__':
+-    N = int(sys.stdin.readline())
+-    vals = list(map(int, sys.stdin.readlines()))
+-    print("Found" if foursum(vals[:N]) else "None")
++import sys
++
++def foursum(vals):
++    N=len(vals)
++    P = dict()
++    for i in range(N):
++        P[+vals[i]] = i #put a different value and key in the dicionary
++
++    for j in range(N):
++        for i in range(j):
++            if P.get(-vals[i]-vals[j],0) > j:
++                return True
++    return False
++
++if __name__ == '__main__':
++    N = int(sys.stdin.readline())
++    vals = list(map(int, sys.stdin.readlines()))
++    print("Found" if foursum(vals[:N]) else "None")
+diff --git a/pythonSol/simple.py b/pythonSol/simple.py
+index 8229f95..909c267 100644
+--- a/pythonSol/simple.py
++++ b/pythonSol/simple.py
+@@ -1,14 +1,14 @@
+-from __future__ import print_function
+-import sys
+-
+-N = int(sys.stdin.readline())
+-vals = list(map(int, sys.stdin.readlines()))
+-
+-for i in range(0, N):
+-    for j in range(i+1, N):
+-        for k in range(j+1, N):
+-            if vals[i]+vals[j]+vals[k] == 0:
+-                print("{}:{}  {}:{}  {}:{}".format(i,vals[i],j,vals[j],k,vals[k]),file=sys.stderr)
+-                print("Found")
+-                sys.exit()
+-print("None")
++from __future__ import print_function
++import sys
++
++N = int(sys.stdin.readline())
++vals = list(map(int, sys.stdin.readlines()))
++
++for i in range(0, N):
++    for j in range(i+1, N):
++        for k in range(j+1, N):
++            if vals[i]+vals[j]+vals[k] == 0:
++                print("{}:{}  {}:{}  {}:{}".format(i,vals[i],j,vals[j],k,vals[k]),file=sys.stderr)
++                print("Found")
++                sys.exit()
++print("None")
+diff --git a/report-threesum.tex b/report-threesum.tex
+index 2e1848e..57da62b 100644
+--- a/report-threesum.tex
++++ b/report-threesum.tex
+@@ -1,99 +1,112 @@
+-\documentclass[nobib]{tufte-handout}
+-
+-\usepackage{amsmath}
+-\usepackage[utf8]{inputenc}
+-\usepackage{mathpazo}
+-\usepackage{booktabs}
+-\usepackage{microtype}
+-\usepackage{tikz}
+-\usepackage{enumitem}
+-\usepackage{pgfplots}
+-\pgfplotsset{width=9cm,compat=1.13}
+-\usepackage{pgfplotstable}
+-
+-\usepackage{listings}
+-
+-\title{Comparison of several 3-Sum algorithms}
+-\author{Nikol Shakleva (nikv@itu.dk)\thanks{based on the template at
+-\url{https://github.itu.dk/algorithms/ThreeSum}}}
+-
+-\begin{document}
+-\maketitle
+-
+-\section{Compared Algorithms and Impementations}
+-
+-We compare the naive triple loop implementation and a dictionary/HashMap based implementation, in both python3 and java.
+-The algorithms are explained elsewhere.
+-
+-%\lstinputlisting{pythonSol/simple.py}
+-
+-\subsection{Experiments}
+-
+-The two algorithms are
+-\begin{itemize}
+-\item enumerating all triples in $O(n^3)$
+-\item storing the numbers in a hashtable and check all pairs in $O(n^2)$ time
+-\end{itemize}
+-
+-Both algorithms are implemented in java and python3.
+-
+-
+-\newcommand{\tableDir}{Tables-DESKTOP-GVQ983C-05345d7}
+-\newcommand{\xtableDir}{Tables-APALGtraining-cce3eed}
+-We report on an experiment executed on a Thinkpad X1 Carboon with a i7-5600U CPU, with a  nominal frequency of 2.60GHz.
+-We run serial programs, even though the CPU has 2~cores.
+-The data can be found in \tableDir.
+-The running times are determined by a python script running the testprogram as a subprocess.
+-We report mean and standard deviation from 4 runs.
+-We aim at the longest execution time being roughly 30 seconds.
+-
+-The data for the triple loop algorithm in python looks like this (column 0 is size, 1 is mean, 2 is standard deviation):
+-
+-
+-\begin{tikzpicture}
+-	\begin{axis}[
+-		title={Running times no triples, data in \tableDir},
+-		xlabel={$N$},
+-                xmode = log,
+-                log ticks with fixed point,
+-                ymode = log,
+-		ylabel={Time (s)},
+-		xmin=30, xmax=150000,
+-		ymin=.03, ymax=75,
+-		xtick={30,50,100,200,400, 800, 2000,5000,15000},
+-		%ytick={0,40,80,160},
+-		ytick={.05,.1,.2,.5,1,2,5,10,20},
+-                legend style={at={(1.1,0)}, anchor=south west},
+-                % legend pos=north east, %north west,
+-		%ymajorgrids=true,
+-		%grid style=dashed,
+-	]
+-        %	coordinates { (100,32)(200,37.8)(400,44.6)(800,61.8)(1600,83.8)(3200,114) };
+-	\addplot[ color=red, mark=*,error bars/.cd,y dir=both,y explicit ]	table [x index=0, y index=1, y error index=2] {\tableDir /WeedPythSimple.table};
+-        % coordinates { (100,132)(200,72.8)(400,144.6)(800,161.8)(1600,133.8)(3200,224) };
+-	\addplot[color=blue, mark=x,error bars/.cd,y dir=both,y explicit ] table [x index=0, y index=1, y error index=2] {\tableDir /WeedJavaSimple.table};
+-	\addplot[ color=brown, mark=x,error bars/.cd,y dir=both,y explicit ] table [x index=0, y index=1, y error index=2] {\tableDir /WeedPythDict.table};
+-	\addplot[ color=green, mark=o,error bars/.cd,y dir=both,y explicit ] table [x index=0, y index=1, y error index=2] {\tableDir /WeedJavaDict.table};
+-        %%%
+-%        \addplot[color=yellow] expression[domain=8:3200] {.00009*x+.08};
+-%        \addplot[color=yellow] expression[domain=8:3200] {.0009*x};
+-%        \addplot[color=yellow] expression[domain=8:3200] {.0002*x*ln(x)};
+-        \addplot[color=yellow] expression[domain=8:150000] {.000000031*x*x*x};
+-        \addplot[color=yellow] expression[domain=8:150000] {.00000000011*x*x*x};
+-%        \addplot[color=yellow] expression[domain=8:3200] {.00000000031*x*x*x*x};
+-        \addplot[color=yellow] expression[domain=8:150000] {.00000013*x*x};
+-        \addplot[color=yellow] expression[domain=8:150000] {.000000018*x*x};
+-        %
+-        %
+-	% \addplot[ color=magenta, mark=*,error bars/.cd,y dir=both,y explicit ] table [x index=0, y index=1, y error index=2] {\xtableDir /WeedPythSimple.table};
+-	% \addplot[color=cyan, mark=x,error bars/.cd,y dir=both,y explicit ] table [x index=0, y index=1, y error index=2] {\xtableDir /WeedJavaSimple.table};
+-	% \addplot[ color=lime, mark=x,error bars/.cd,y dir=both,y explicit ] table [x index=0, y index=1, y error index=2] {\xtableDir /WeedPythDict.table};
+-	% \addplot[ color=orange, mark=o,error bars/.cd,y dir=both,y explicit ] table [x index=0, y index=1, y error index=2] {\xtableDir /WeedJavaDict.table};
+-	\legend{Python, Java, Fast Python, Fast Java, $x^2$, $x^3$}
+-	\end{axis}
+-\end{tikzpicture}
+-
+-The yellow helper-lines indicate that the running times are indeed cubic and quadratic.
+-Based on these lines we conclude that for the triple loop, java is roughly 280 times faster,
+-and for the hash based version it is roughly 7 times faster.
+-\end{document}
++\documentclass[nobib]{tufte-handout}
++
++\usepackage{amsmath}
++\usepackage[utf8]{inputenc}
++\usepackage{mathpazo}
++\usepackage{booktabs}
++\usepackage{microtype}
++\usepackage{tikz}
++\usepackage{enumitem}
++\usepackage{pgfplots}
++\pgfplotsset{width=9cm,compat=1.13}
++\usepackage{pgfplotstable}
++
++\usepackage{listings}
++
++\title{Comparison of several 3-Sum algorithms}
++\author{Nikol Shakleva (nikv@itu.dk)\thanks{based on the template at
++\url{https://github.itu.dk/algorithms/ThreeSum}}}
++
++\begin{document}
++\maketitle
++
++\section{Compared Algorithms and Impementations}
++
++We compare the naive triple loop implementation and a dictionary/HashMap based implementation, in both python3 and java.
++The algorithms are explained elsewhere.
++
++%\lstinputlisting{pythonSol/simple.py}
++
++\subsection{Experiments}
++
++The two algorithms are
++\begin{itemize}
++\item enumerating all triples in $O(n^3)$
++\item storing the numbers in a hashtable and check all pairs in $O(n^2)$ time
++\end{itemize}
++
++Both algorithms are implemented in java and python3.
++
++
++\newcommand{\tableDir}{Tables2596c56-DESKTOP-GVQ983C-01}
++\newcommand{\xtableDir}{Tables-APALGtraining-cce3eed}
++We report on an experiment executed on a Thinkpad X1 Carboon with a i7-5600U CPU, with a  nominal frequency of 2.60GHz.
++We run serial programs, even though the CPU has 2~cores.
++The data can be found in \tableDir.
++The running times are determined by a python script running the testprogram as a subprocess.
++We report mean and standard deviation from 4 runs.
++We aim at the longest execution time being roughly 30 seconds.
++
++The data for the triple loop algorithm in python looks like this (column 0 is size, 1 is mean, 2 is standard deviation):
++
++
++\begin{tikzpicture}
++	\begin{axis}[
++		title={Running times no triples, data in \tableDir},
++		xlabel={$N$},
++                xmode = log,
++                log ticks with fixed point,
++                ymode = log,
++		ylabel={Time (s)},
++		xmin=30, xmax=150000,
++		ymin=.03, ymax=75,
++		xtick={30,50,100,200,400, 800, 2000,5000,15000},
++		%ytick={0,40,80,160},
++		ytick={.05,.1,.2,.5,1,2,5,10,20},
++                legend style={at={(1.1,0)}, anchor=south west},
++                % legend pos=north east, %north west,
++		%ymajorgrids=true,
++		%grid style=dashed,
++	]
++        %	coordinates { (100,32)(200,37.8)(400,44.6)(800,61.8)(1600,83.8)(3200,114) };
++	\addplot[ color=red, mark=*,error bars/.cd,y dir=both,y explicit ]	table [x index=0, y index=1, y error index=2] {\tableDir /WeedPythSimple.table};
++        % coordinates { (100,132)(200,72.8)(400,144.6)(800,161.8)(1600,133.8)(3200,224) };
++	\addplot[color=blue, mark=x,error bars/.cd,y dir=both,y explicit ] table [x index=0, y index=1, y error index=2] {\tableDir /WeedJavaSimple.table};
++	\addplot[ color=brown, mark=x,error bars/.cd,y dir=both,y explicit ] table [x index=0, y index=1, y error index=2] {\tableDir /WeedPythDict.table};
++	\addplot[ color=green, mark=o,error bars/.cd,y dir=both,y explicit ] table [x index=0, y index=1, y error index=2] {\tableDir /WeedJavaDict.table};
++        %%%
++%        \addplot[color=yellow] expression[domain=8:3200] {.00009*x+.08};
++%        \addplot[color=yellow] expression[domain=8:3200] {.0009*x};
++%        \addplot[color=yellow] expression[domain=8:3200] {.0002*x*ln(x)};
++        \addplot[color=yellow] expression[domain=8:150000] {.000000031*x*x*x};
++        \addplot[color=yellow] expression[domain=8:150000] {.00000000011*x*x*x};
++%        \addplot[color=yellow] expression[domain=8:3200] {.00000000031*x*x*x*x};
++        \addplot[color=yellow] expression[domain=8:150000] {.00000013*x*x};
++        \addplot[color=yellow] expression[domain=8:150000] {.000000018*x*x};
++        %
++        %
++	% \addplot[ color=magenta, mark=*,error bars/.cd,y dir=both,y explicit ] table [x index=0, y index=1, y error index=2] {\xtableDir /WeedPythSimple.table};
++	% \addplot[color=cyan, mark=x,error bars/.cd,y dir=both,y explicit ] table [x index=0, y index=1, y error index=2] {\xtableDir /WeedJavaSimple.table};
++	% \addplot[ color=lime, mark=x,error bars/.cd,y dir=both,y explicit ] table [x index=0, y index=1, y error index=2] {\xtableDir /WeedPythDict.table};
++	% \addplot[ color=orange, mark=o,error bars/.cd,y dir=both,y explicit ] table [x index=0, y index=1, y error index=2] {\xtableDir /WeedJavaDict.table};
++	\legend{Python, Java, Fast Python, Fast Java, $x^2$, $x^3$}
++	\end{axis}
++\end{tikzpicture}
++
++
++The yellow helper-lines indicate that the running times are indeed cubic and quadratic.
++Based on these lines we conclude that for the triple loop, java is roughly 280 times faster,
++and for the hash based version it is roughly 7 times faster.
++
++\subsection{Trigger Error}
++A new file  HashPairsError.java was created. The file is almost a copy of the original HashPairs.java.
++The only difference is that the newly created file has adjusted if condition statement on line 23. The new file is error prone
++because it only checks if the sum of two integers is equal to a third integer already existing in the sequence input. 
++Therefore, it outputs that a triple is found, even though, a triple doesnt exists.
++In order to produce the input that triggers the error from the HashPairsError.java the Produce.java file is modified so that
++we have a pair of input numbers a, b  with a + a + b = 0. This is achieved through introducing a new case called mistake. See the code on line 43-44.
++Moreover, the allexps.py file is modified so a new test case for the new  HashPairsError.java is included.
++The result of the error trigger can be see here:
++\begin {verbatim} Different results for N=10 seed=5679 tested=Process javaSol/HashPairs.java: is='Found' (err: ''), should be '('None', 'java -cp . Produce mode 10 5679 | java -cp javaSol Simple')'
++
++\end{document}
+diff --git a/software.md b/software.md
+index 0da5383..f61a8b4 100644
+--- a/software.md
++++ b/software.md
+@@ -1,111 +1,111 @@
+-# Recommended software
+-
+-This is an adapted version of the installation guide for the Algorithms and Data Structures Spring course. If your setup worked in that couurse, you are probably good to go. Note that we recommend you install both Java and Python for this course. See the original version here: <https://github.itu.dk/pages/algorithms/ads-2020-notes/preparation/software/>
+-
+-In general, we discourage using an IDE and instead highly recommend that you work with the command line. We will not need most features that IDEs provide - while IDEs are helpful for large software projects, we consider them a distraction from the content of this course.
+-
+-This page describes a consistent configuration for each operating system. The goal is to give everyone a UNIX-style command line where you can run Java or Python. The teachers use Linux and MacOS.
+-
+-## [Windows only] Windows Subsystem for Linux (WSL)
+-
+-Since you will work with UNIX-based tools (such as bash scripts and the terminal), please install and activate the Linux subsystem in Windows. This is a small Ubuntu distribution that works without the need for a virtual machine or dual-boot. To activate the WSL, follow [these instructions](https://docs.microsoft.com/en-us/windows/wsl/install-win10) and install Ubuntu 20.04 (or, if not available, you can also use 18.04).
+-
+-## Java
+-
+-We recommend the following route for installing OpenJDK-11, the latest version of Java that has Long-Term Support.
+-Other versions and variants might or might not work -- if you do not stick to the recommended route, you cannot expect support from TAs or teachers.
+-
+-- On Windows without WSL: Install it from [adoptopenjdk.net](https://adoptopenjdk.net/?variant=openjdk11&jvmVariant=hotspot) with the JVM HotSpot. (If you install Java this way, you can't use the WSL, but must use the Windows command prompt)
+-- On MacOS, Linux, or in the WSL: Install [sdkman](https://sdkman.io/install), which manages different Java versions and development software. In short, run the following commands in the terminal:
+-
+-```bash
+-curl -s "https://get.sdkman.io" | bash
+-source "$HOME/.sdkman/bin/sdkman-init.sh"
+-sdk install java
+-```
+-
+-At the time of writing, this should install `11.0.6.hs-adpt`. Important about this is `11` (the latest stable version of Java), `hs` (HotSpot), and `adpt` (AdoptOpenJDK). If sdkman installed any `11.x.y.hs-adpt` version, that's fine. If it installed a significantly different version, look at `sdk list java` for a list of available versions and install the one closest to it using `sdk install java 11.x.y.hs-adpt`.
+-
+-After installing Java, enter `java -version` in a command prompt and verify that the version number is correct:
+-```console
+-user@host:~$ java -version
+-openjdk version "11.0.6" 2020-01-14
+-OpenJDK Runtime Environment AdoptOpenJDK (build 11.0.6+10)
+-OpenJDK 64-Bit Server VM AdoptOpenJDK (build 11.0.6+10, mixed mode)
+-```
+-
+-### Sedgewick/Wayne Library
+-
+-Download the library associated with the Sedgewick and Wayne book, that is, the file [algs4.jar](https://algs4.cs.princeton.edu/code/algs4.jar). Choose a directory where to store the file, for example your home directory `$HOME`. In your `.bashrc`, set your `CLASSPATH` environment variable to `.:$HOME/algs4.jar`. On a UNIX command line with bash, the following would do the job:
+-```bash
+-curl -s "https://algs4.cs.princeton.edu/code/algs4.jar" > "$HOME/algs4.jar"
+-echo 'export CLASSPATH=".:$HOME/algs4.jar"' >> "$HOME/.bashrc"
+-source "$HOME/.bashrc"
+-```
+-On MacOS, the file .`bashrc` is not used. Instead, you need to use `$HOME/.bash_profile` or `$HOME/.profile` in the commands above.
+-
+-In Windows 10, you can set the CLASSPATH environment variables as follows:
+-Go to "Control Panel ⇒ System and Security ⇒ System ⇒ Advanced System Settings ⇒ Advanced ⇒ Environment Variables..." and add the correct path (such as `C:\path\to\algs4.jar`) to the "CLASSPATH" variable.
+-
+-There are other ways of installing algs4.jar, detailed instructions can be found in the middle of [this page](https://algs4.cs.princeton.edu/code/).
+-
+-### Test that it works
+-
+-In the end, it is important that you test that Java and the library are correctly installed.
+-In a command prompt, enter the following:
+-```bash
+-java edu.princeton.cs.algs4.Date
+-```
+-If everything is installed correctly, this will print a bunch of dates. Otherwise, it will complain with an error message.
+-
+-## Python
+-
+-Install Python 3.7 by downloading and running the _Anaconda_ installer appropriate for your operating system from the [anaconda website](https://www.anaconda.com/distribution/).
+-If you need more instructions, there are some [useful slides](https://learnit.itu.dk/mod/resource/view.php?id=104910).
+-Note that you must use Python 3 as we rely on some modern Python features, and if you use anything other than Anaconda, that's fine, but do not expect support from TAs or teachers.
+-
+-After installing Python, enter `python --version` in a command prompt and verify that the version number is correct:
+-```console
+-user@host:~$ python --version
+-Python 3.7.6
+-```
+-
+-### Python translation of Sedgewick/Wayne Library
+-
+-Download and install our translation of Sedgewick and Wayne's library into
+-Python 3. With Python 3 correctly installed, this should be as easy as running
+-the following command:
+-
+-```bash
+-pip install itu.algs4
+-```
+-
+-In case this doesn't quite work, you can find more detailed instructions on
+-[this page](https://github.com/itu-algorithms/itu.algs4).
+-
+-### Test that it works
+-
+-In the end, it is important that you test that Python as well as the library are correctly installed.
+-In a command prompt, enter the following:
+-```bash
+-python -c 'from itu.algs4.stdlib import stdio; stdio.write("Hello World!\n")'
+-```
+-If everything is installed correctly, this will print `Hello World!`. Otherwise, it will complain with an error message.
+-
+-## Editor
+-
+-We are editor-agnostic, that is, we will mainly work with the files directly and consider them to be plain text documents. The role of the editor in this course is just this: edit the content of files.
+-For this reason, we recommend that you do not use a heavy IDE, but a more light-weight editor.
+-Nevertheless, syntax highlighting is a nice feature.
+-The teachers use editors such as `vim` and `emacs`.
+-
+-Of course, `vim` and `emacs` have a learning curve, so you can use editors such
+-as Visual Studio Code as well. However, remember that in this course the editor
+-should just be used to edit files. It is best to compile and run programs from
+-the command line only.
+-
+-You can also find an in-depth class that teaches you common command-line tools at <https://missing.csail.mit.edu/>.
+-
+-## LaTeX
+-
+-We recommend you to install LaTeX locally on your machine. You can use the `texlive` distribution from <https://tug.org/texlive/>. (Windows users can use texlive from their WSL installation in the same way as Linux users.) Alternatively, you can use https://overleaf.com, which makes collaboration on tex documents very simple.
++# Recommended software
++
++This is an adapted version of the installation guide for the Algorithms and Data Structures Spring course. If your setup worked in that couurse, you are probably good to go. Note that we recommend you install both Java and Python for this course. See the original version here: <https://github.itu.dk/pages/algorithms/ads-2020-notes/preparation/software/>
++
++In general, we discourage using an IDE and instead highly recommend that you work with the command line. We will not need most features that IDEs provide - while IDEs are helpful for large software projects, we consider them a distraction from the content of this course.
++
++This page describes a consistent configuration for each operating system. The goal is to give everyone a UNIX-style command line where you can run Java or Python. The teachers use Linux and MacOS.
++
++## [Windows only] Windows Subsystem for Linux (WSL)
++
++Since you will work with UNIX-based tools (such as bash scripts and the terminal), please install and activate the Linux subsystem in Windows. This is a small Ubuntu distribution that works without the need for a virtual machine or dual-boot. To activate the WSL, follow [these instructions](https://docs.microsoft.com/en-us/windows/wsl/install-win10) and install Ubuntu 20.04 (or, if not available, you can also use 18.04).
++
++## Java
++
++We recommend the following route for installing OpenJDK-11, the latest version of Java that has Long-Term Support.
++Other versions and variants might or might not work -- if you do not stick to the recommended route, you cannot expect support from TAs or teachers.
++
++- On Windows without WSL: Install it from [adoptopenjdk.net](https://adoptopenjdk.net/?variant=openjdk11&jvmVariant=hotspot) with the JVM HotSpot. (If you install Java this way, you can't use the WSL, but must use the Windows command prompt)
++- On MacOS, Linux, or in the WSL: Install [sdkman](https://sdkman.io/install), which manages different Java versions and development software. In short, run the following commands in the terminal:
++
++```bash
++curl -s "https://get.sdkman.io" | bash
++source "$HOME/.sdkman/bin/sdkman-init.sh"
++sdk install java
++```
++
++At the time of writing, this should install `11.0.6.hs-adpt`. Important about this is `11` (the latest stable version of Java), `hs` (HotSpot), and `adpt` (AdoptOpenJDK). If sdkman installed any `11.x.y.hs-adpt` version, that's fine. If it installed a significantly different version, look at `sdk list java` for a list of available versions and install the one closest to it using `sdk install java 11.x.y.hs-adpt`.
++
++After installing Java, enter `java -version` in a command prompt and verify that the version number is correct:
++```console
++user@host:~$ java -version
++openjdk version "11.0.6" 2020-01-14
++OpenJDK Runtime Environment AdoptOpenJDK (build 11.0.6+10)
++OpenJDK 64-Bit Server VM AdoptOpenJDK (build 11.0.6+10, mixed mode)
++```
++
++### Sedgewick/Wayne Library
++
++Download the library associated with the Sedgewick and Wayne book, that is, the file [algs4.jar](https://algs4.cs.princeton.edu/code/algs4.jar). Choose a directory where to store the file, for example your home directory `$HOME`. In your `.bashrc`, set your `CLASSPATH` environment variable to `.:$HOME/algs4.jar`. On a UNIX command line with bash, the following would do the job:
++```bash
++curl -s "https://algs4.cs.princeton.edu/code/algs4.jar" > "$HOME/algs4.jar"
++echo 'export CLASSPATH=".:$HOME/algs4.jar"' >> "$HOME/.bashrc"
++source "$HOME/.bashrc"
++```
++On MacOS, the file .`bashrc` is not used. Instead, you need to use `$HOME/.bash_profile` or `$HOME/.profile` in the commands above.
++
++In Windows 10, you can set the CLASSPATH environment variables as follows:
++Go to "Control Panel ⇒ System and Security ⇒ System ⇒ Advanced System Settings ⇒ Advanced ⇒ Environment Variables..." and add the correct path (such as `C:\path\to\algs4.jar`) to the "CLASSPATH" variable.
++
++There are other ways of installing algs4.jar, detailed instructions can be found in the middle of [this page](https://algs4.cs.princeton.edu/code/).
++
++### Test that it works
++
++In the end, it is important that you test that Java and the library are correctly installed.
++In a command prompt, enter the following:
++```bash
++java edu.princeton.cs.algs4.Date
++```
++If everything is installed correctly, this will print a bunch of dates. Otherwise, it will complain with an error message.
++
++## Python
++
++Install Python 3.7 by downloading and running the _Anaconda_ installer appropriate for your operating system from the [anaconda website](https://www.anaconda.com/distribution/).
++If you need more instructions, there are some [useful slides](https://learnit.itu.dk/mod/resource/view.php?id=104910).
++Note that you must use Python 3 as we rely on some modern Python features, and if you use anything other than Anaconda, that's fine, but do not expect support from TAs or teachers.
++
++After installing Python, enter `python --version` in a command prompt and verify that the version number is correct:
++```console
++user@host:~$ python --version
++Python 3.7.6
++```
++
++### Python translation of Sedgewick/Wayne Library
++
++Download and install our translation of Sedgewick and Wayne's library into
++Python 3. With Python 3 correctly installed, this should be as easy as running
++the following command:
++
++```bash
++pip install itu.algs4
++```
++
++In case this doesn't quite work, you can find more detailed instructions on
++[this page](https://github.com/itu-algorithms/itu.algs4).
++
++### Test that it works
++
++In the end, it is important that you test that Python as well as the library are correctly installed.
++In a command prompt, enter the following:
++```bash
++python -c 'from itu.algs4.stdlib import stdio; stdio.write("Hello World!\n")'
++```
++If everything is installed correctly, this will print `Hello World!`. Otherwise, it will complain with an error message.
++
++## Editor
++
++We are editor-agnostic, that is, we will mainly work with the files directly and consider them to be plain text documents. The role of the editor in this course is just this: edit the content of files.
++For this reason, we recommend that you do not use a heavy IDE, but a more light-weight editor.
++Nevertheless, syntax highlighting is a nice feature.
++The teachers use editors such as `vim` and `emacs`.
++
++Of course, `vim` and `emacs` have a learning curve, so you can use editors such
++as Visual Studio Code as well. However, remember that in this course the editor
++should just be used to edit files. It is best to compile and run programs from
++the command line only.
++
++You can also find an in-depth class that teaches you common command-line tools at <https://missing.csail.mit.edu/>.
++
++## LaTeX
++
++We recommend you to install LaTeX locally on your machine. You can use the `texlive` distribution from <https://tug.org/texlive/>. (Windows users can use texlive from their WSL installation in the same way as Linux users.) Alternatively, you can use https://overleaf.com, which makes collaboration on tex documents very simple.

@@ -38,9 +38,9 @@ The two algorithms are
 Both algorithms are implemented in java and python3.
 
 
-\newcommand{\tableDir}{Tables-DESKTOP-GVQ983C-05345d7}
+\newcommand{\tableDir}{Tables2596c56-DESKTOP-GVQ983C-01}
 \newcommand{\xtableDir}{Tables-APALGtraining-cce3eed}
-We report on an experiment executed on a Thinkpad X1 Carboon with a i7-5600U CPU, with a  nominal frequency of 2.60GHz.
+We report on an experiment executed on a Thinkpad x260 with a i7-5600U CPU, with a  nominal frequency of 2.60GHz.
 We run serial programs, even though the CPU has 2~cores.
 The data can be found in \tableDir.
 The running times are determined by a python script running the testprogram as a subprocess.
@@ -78,11 +78,11 @@ The data for the triple loop algorithm in python looks like this (column 0 is si
 %        \addplot[color=yellow] expression[domain=8:3200] {.00009*x+.08};
 %        \addplot[color=yellow] expression[domain=8:3200] {.0009*x};
 %        \addplot[color=yellow] expression[domain=8:3200] {.0002*x*ln(x)};
-        \addplot[color=yellow] expression[domain=8:150000] {.000000031*x*x*x};
-        \addplot[color=yellow] expression[domain=8:150000] {.00000000011*x*x*x};
+        \addplot[color=yellow] expression[domain=8:150000] {.00000012*x*x*x};
+        \addplot[color=yellow] expression[domain=8:150000] {.00000000017*x*x*x};
 %        \addplot[color=yellow] expression[domain=8:3200] {.00000000031*x*x*x*x};
-        \addplot[color=yellow] expression[domain=8:150000] {.00000013*x*x};
-        \addplot[color=yellow] expression[domain=8:150000] {.000000018*x*x};
+        \addplot[color=yellow] expression[domain=8:150000] {.00000040*x*x};
+        \addplot[color=yellow] expression[domain=8:150000] {.000000025*x*x};
         %
         %
 	% \addplot[ color=magenta, mark=*,error bars/.cd,y dir=both,y explicit ] table [x index=0, y index=1, y error index=2] {\xtableDir /WeedPythSimple.table};
@@ -96,4 +96,18 @@ The data for the triple loop algorithm in python looks like this (column 0 is si
 The yellow helper-lines indicate that the running times are indeed cubic and quadratic.
 Based on these lines we conclude that for the triple loop, java is roughly 280 times faster,
 and for the hash based version it is roughly 7 times faster.
+
+\subsection{Trigger Error}
+A new file HashPairsError.java was created. The file is almost a copy of the original HashPairs.java.
+The only difference is that the newly created file has adjusted if condition statement on line 23. The new file is error prone
+because it only checks if the sum of two integers is equal to a third integer already existing in the sequence input. 
+Therefore, it outputs that a triple is found, even though, a triple doesnt exists.
+In order to produce the input that triggers the error from the HashPairsError.java the Produce.java file is modified so that
+we have a pair of input numbers a, b with a + a + b = 0. This is achieved through introducing a new case called mistake. See the code on line 43-44.
+Moreover, the allexps.py file is modified so a new test case for the new HashPairsError.java is included.
+The result of the error trigger can be see here:
+\begin{verbatim} 
+Different results for N=10 seed=5679 tested=Process javaSol/HashPairs.java: is='Found' (err: ''), should be '('None', 'java -cp . Produce mode 10 5679 | java -cp javaSol Simple')'
+\end{verbatim}
+Link to repository: \url{https://github.itu.dk/nikv/ThreeSum}
 \end{document}
